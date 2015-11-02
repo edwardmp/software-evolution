@@ -3,12 +3,18 @@ module Analyzer
 import List;
 import lang::java::m3::AST;
 
-public Declaration locToAst(loc location) {
-	Declaration ast = createAstFromFile(location, true);
-	return ast;
+public list[Declaration] locToAsts(loc location) {
+	return createAstsFromDirectory(location, true);
 }
 
-public list[value] locToLines(loc location) = declarationToLines(locToAst(location));
+public void astsToLines(list[Declaration] decs)
+{
+	return ([] | it + dec | dec <- mapper(decs, declarationToLines));
+}
+
+public list[value] locToLines(loc location) {
+	return astsToLines(locToAsts(location));
+}
 
 public list[value] declarationToLines(Declaration ast)
 {	
@@ -22,6 +28,7 @@ public list[value] declarationToLines(Declaration ast)
 		case \class(str name, list[Type] extends, list[Type] implements, list[Declaration] body):
 			{
 				list[value] extImpl = extends + implements;
+				
 				if (isEmpty(extImpl)) {
 					return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 				}
