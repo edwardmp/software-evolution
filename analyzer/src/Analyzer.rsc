@@ -20,7 +20,15 @@ public list[value] declarationToLines(Declaration ast)
 		case \enum(str name, list[Type] implements, list[Declaration] constants, list[Declaration] body):
 			return "{" + implements + constants + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 		case \class(str name, list[Type] extends, list[Type] implements, list[Declaration] body):
-			return extends + implements + "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+			{
+				list[value] extImpl = extends + implements;
+				if (isEmpty(extImpl)) {
+					return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+				}
+				else {
+					return extImpl + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+				}
+			}
 		case \class(list[Declaration] body):
 			return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 		case \interface(str name, list[Type] extends, list[Type] implements, list[Declaration] body):
