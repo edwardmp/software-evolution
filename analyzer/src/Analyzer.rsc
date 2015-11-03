@@ -4,12 +4,17 @@ import Exception;
 import List;
 import Map;
 import Set;
+import String;
 import lang::java::m3::AST;
+
+private map[str, int] numberOfConditionsEncounteredPerMethod = ();
+
+private str activeMethod = "";
 
 /*
  * A map containing the lines in each method, after locToLines has been run.
  */
-private map[str,list[value]] linesPerMethod = ();
+private map[str, list[value]] linesPerMethod = ();
 
 /*
  * Indicates whether analysis has been run and lines per method can be obtained.
@@ -74,20 +79,29 @@ public list[value] declarationToLines(Declaration ast)
 		case \initializer(Statement initializerBody):
 			return statementToLines(initializerBody);
 		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): {
-			list[value] body = statementToLines(impl);
-			linesPerMethod += (name : body);
-			return exceptions + body;
+			return handleMethodOrConstructor(name, impl, exceptions);
 		}
 		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):
 			return name + exceptions; // recheck
 		case \constructor(str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): {
-			list[value] body = statementToLines(impl);
-			linesPerMethod += (name : body);
-			return exceptions + body;
+			return handleMethodOrConstructor(name, impl, exceptions);
 		}
 		default:
 			return [];
 	}
+}
+
+public list[value] handleMethodOrConstructor(str nameOfMethod, Statement impl,  list[Expression] exceptions) {
+	str previousActiveMethod = activeMethod;
+	activeMethod = nameOfMethod;
+	
+	numberOfConditionsEncounteredPerMethod += (activeMethod : 1);
+	list[value] body = statementToLines(impl);
+	
+	activeMethod = previousActiveMethod;
+	linesPerMethod += (nameOfMethod : body);
+	
+	return exceptions + body;
 }
 
 /*
@@ -133,18 +147,34 @@ public list[value] statementToLines(Statement statement) {
 			return [e];
 		case b:\block(list[Statement] statements):
 			return "{" +  ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
-		case \do(Statement body, Expression condition):
+		case \do(Statement body, Expression condition): {
+			if (activeMethod != "")
+				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				
 			return statementToLines(body);
+		}
 		case \foreach(Declaration parameter, Expression collection, Statement body):
 			return statementToLines(body);
-		case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body):
+		case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body): {
+			if (activeMethod != "")
+					numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+					
 			return statementToLines(body);
-		case \for(list[Expression] initializers, list[Expression] updaters, Statement body):
+		}
+		case \for(list[Expression] initializers, list[Expression] updaters, Statement body):					
 			return statementToLines(body);
-		case \if(Expression condition, Statement thenBranch):
+		case \if(Expression condition, Statement thenBranch): {
+			if (activeMethod != "")
+				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				
 			return statementToLines(thenBranch);
-		case \if(Expression condition, Statement thenBranch, Statement elseBranch):
+		}
+		case \if(Expression condition, Statement thenBranch, Statement elseBranch): {
+			if (activeMethod != "")
+				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+					
 			return statementToLines(thenBranch) + statementToLines(elseBranch);
+		}
 		case \switch(Expression expression, list[Statement] statements):
 			return "{" + ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
 		case \synchronizedStatement(Expression lock, Statement body):
@@ -155,10 +185,28 @@ public list[value] statementToLines(Statement statement) {
     		return statementToLines(body) + ([] | it + x | x <- mapper(catchClauses, statementToLines));
     	case \catch(Declaration exception, Statement body):
     		return statementToLines(body);
-    	case \while(Expression condition, Statement body):
+    	case \while(Expression condition, Statement body): {
+    		if (activeMethod != "")
+				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				
     		return statementToLines(body);
+    	}
     	default:
     		return [];
+	}
+}
+
+public int countConditions(Expression expr) {
+	switch (expr) {
+		case \infix(Expression lhs, str operator, Expression rhs):
+		{
+			if (operator == "&&" || operator == "||" || operator == "|" || operator == "&" || operator == "^")
+				return countConditions(lhs) + countConditions(rhs);
+			else
+				return 1;
+		}
+		default:
+			return 1;
 	}
 }
 
@@ -192,6 +240,15 @@ public map[str,int] numberOfLinesPerMethod() {
 	if (analysisRan) {
 		// Minus 2 lines for the opening and closing bracket surrounding the method body
 		return (() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
+	}
+	else {
+		throw AssertionFailed("Analysis not ran. Run locToLines first.");
+	}
+}
+
+public map[str, int] getComplexityPerMethod() {
+	if (analysisRan) {
+		return numberOfConditionsEncounteredPerMethod;
 	}
 	else {
 		throw AssertionFailed("Analysis not ran. Run locToLines first.");
