@@ -6,7 +6,6 @@ import Map;
 import Set;
 import String;
 import lang::java::m3::AST;
-import IO;
 
 /*
  * A map containing the lines in each method, after locToLines has been run.
@@ -251,6 +250,23 @@ public list[value] statementToLines(Statement statement) {
 				return thenBranchLines + elseBranchLines;
 		}
 		case \switch(Expression expression, list[Statement] statements): {
+			if (activeMethod != "")
+			{
+				list[Statement] casesPlusDefault = [];
+				for(Statement statement <- statements) {
+					if (\case(Expression expression) := statement) {
+						casesPlusDefault += statement;
+					}
+					else if  (\defaultCase() := statement) {
+						casesPlusDefault += statement;
+					}
+				}
+				
+				int numberOfCases = size(casesPlusDefault);
+				if (numberOfCases != 0)
+					numberOfConditionsEncounteredPerMethod[activeMethod] += (numberOfCases - 1);
+			}
+		
 			handleExpression(expression);
 			return "{" + ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
 		}
@@ -274,6 +290,9 @@ public list[value] statementToLines(Statement statement) {
 	}
 }
 
+/*
+ * Handle expressions, used for computing cyclomatic complexity.
+ */
 public void handleExpression(Expression expr) {
 	if (activeMethod == "")
 		return;
@@ -367,8 +386,6 @@ public void handleExpression(Expression expr) {
 		case \singleMemberAnnotation(str typeName, Expression \value): {
 			handleExpression(\value);
 		}
-		default:
-			return;
 	}
 }
 
