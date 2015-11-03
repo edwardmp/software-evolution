@@ -1,13 +1,14 @@
 module Analyzer
 
 import List;
+import Set;
 import lang::java::m3::AST;
 
-public list[Declaration] locToAsts(loc location) {
+public set[Declaration] locToAsts(loc location) {
 	return createAstsFromDirectory(location, true);
 }
 
-public void astsToLines(list[Declaration] decs)
+public list[value] astsToLines(set[Declaration] decs)
 {
 	return ([] | it + dec | dec <- mapper(decs, declarationToLines));
 }
@@ -106,7 +107,7 @@ public list[value] statementToLines(Statement statement) {
 		case \if(Expression condition, Statement thenBranch):
 			return statementToLines(thenBranch);
 		case \if(Expression condition, Statement thenBranch, Statement elseBranch):
-			return statementTolInes(thenBranch) + statementToLines(elseBranch);
+			return statementToLines(thenBranch) + statementToLines(elseBranch);
 		case \switch(Expression expression, list[Statement] statements):
 			return "{" + ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
 		case \synchronizedStatement(Expression lock, Statement body):
