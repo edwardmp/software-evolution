@@ -189,6 +189,11 @@ public map[str,list[value]] getLinesPerMethod() {
  * mapped from the name of the method.
  */
 public map[str,int] numberOfLinesPerMethod() {
-	// Minus 2 lines for the opening and closing bracket surrounding the method body
-	(() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
+	if (analysisRan) {
+		// Minus 2 lines for the opening and closing bracket surrounding the method body
+		return (() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
+	}
+	else {
+		throw AssertionFailed("Analysis not ran. Run locToLines first.");
+	}
 }
