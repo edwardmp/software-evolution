@@ -6,6 +6,7 @@ import Map;
 import Set;
 import String;
 import lang::java::m3::AST;
+import IO;
 
 /*
  * A map containing the lines in each method, after locToLines has been run.
@@ -91,9 +92,12 @@ public list[value] declarationToLines(Declaration ast)
 		case \constructor(str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl):
 			return handleMethodOrConstructor(name, impl, exceptions);
 		case \variables(Type \type, list[Expression] \fragments):
+		{
 			for (Expression expr <- \fragments) {
 				handleExpression(expr);
 			}
+			return [];
+		}
 		default:
 			return [];
 	}
@@ -159,7 +163,10 @@ public list[value] statementToLines(Statement statement) {
 			return [t];
 		}
 		case d:\declarationStatement(Declaration declaration):
+		{
+			declarationToLines(declaration);
 			return [d];
+		}
 		case c:\constructorCall(bool isSuper, Expression expr, list[Expression] arguments): {
 			for (Expression epxression <- expr + arguments) {
 				handleExpression(expression);
@@ -167,7 +174,7 @@ public list[value] statementToLines(Statement statement) {
 			return [c];
 		}
    		case c:\constructorCall(bool isSuper, list[Expression] arguments): {
-   			for (Expression epxression <- arguments) {
+   			for (Expression expression <- arguments) {
 				handleExpression(expression);
 			}
    			return [c];
@@ -217,7 +224,31 @@ public list[value] statementToLines(Statement statement) {
 				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
-			return statementToLines(thenBranch) + statementToLines(elseBranch);
+		
+			list[value] thenBranchLines = statementToLines(thenBranch);
+			
+			value thenBranchLastLine = "";
+			if (!isEmpty(thenBranchLines)) {
+				thenBranchLastLine = last(thenBranchLines);
+				thenBranchLines = delete(thenBranchLines, (size(thenBranchLines) - 1));
+			}
+			
+			list[value] elseBranchLines =  statementToLines(elseBranch);
+			
+			value elseBranchFirstLine = "";
+			if (!isEmpty(elseBranchLines)) {
+				elseBranchFirstLine = head(elseBranchLines);
+				elseBranchLines = delete(elseBranchLines, 0);
+			}
+			
+			if (thenBranchLastLine != "" && elseBranchFirstLine != "")
+				return thenBranchLines + <thenBranchLastLine, elseBranchFirstLine> + elseBranchLines;
+			else if (thenBranchLastLine != "")
+				return thenBranchLines + thenBranchLastLine + elseBranchLines;
+			else if (elseBranchFirstLine != "")
+				return thenBranchLines + elseBranchFirstLine + elseBranchLines;
+			else
+				return thenBranchLines + elseBranchLines;
 		}
 		case \switch(Expression expression, list[Statement] statements): {
 			handleExpression(expression);
@@ -245,11 +276,99 @@ public list[value] statementToLines(Statement statement) {
 
 public void handleExpression(Expression expr) {
 	if (activeMethod == "")
-		return
+		return;
 	
 	switch(expr) {
+		case \arrayAccess(Expression array, Expression index): {
+			handleExpression(array);
+			handleExpression(index);
+		}
+		case \newArray(Type \type, list[Expression] dimensions, Expression init): {
+			for(expr <- dimensions + init)
+				handleExpression(expr);
+		}
+		case \newArray(Type \type, list[Expression] dimensions): {
+			for(expr <- dimensions)
+				handleExpression(expr);
+		}
+		case \arrayInitializer(list[Expression] elements): {
+			for(expr <- elements)
+				handleExpression(expr);	
+		}
+		case \assignment(Expression lhs, str operator, Expression rhs): {
+			handleExpression(lhs);
+			handleExpression(rhs);
+		}
+		case \cast(Type \type, Expression expression): {
+			handleExpression(expression);
+		}
+		case \newObject(Expression expr, Type \type, list[Expression] args, Declaration class): {
+			for(expression <- expr + args)
+				handleExpression(expression);
+		}
+		case \newObject(Expression expr, Type \type, list[Expression] args): {
+			for(expression <- expr + args)
+				handleExpression(expression);
+		}
+		case \newObject(Type \type, list[Expression] args, Declaration class): {
+			for(expr <- args)
+				handleExpression(expr);
+		}
+		case \newObject(Type \type, list[Expression] args): {
+			for(expr <- args)
+				handleExpression(expr);
+		}
+		case \qualifiedName(Expression qualifier, Expression expression): {
+			handleExpression(qualifier);
+			handleExpression(expression);
+		}
 		case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):
+		{
+			handleExpression(thenBranch);
+			handleExpression(elseBranch);
 			numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(expression);
+		}
+		case \fieldAccess(bool isSuper, Expression expression, str name): {
+			handleExpression(expression);
+		}
+		case \instanceof(Expression leftSide, Type rightSide): {
+			handleExpression(leftSide);
+		}
+		case \methodCall(bool isSuper, str name, list[Expression] arguments): {
+			for(expr <- arguments)
+				handleExpression(expr);
+		}
+		case \methodCall(bool isSuper, Expression receiver, str name, list[Expression] arguments): {
+			for(expr <- receiver + arguments)
+				handleExpression(expr);
+		}
+		case \variable(str name, int extraDimensions, Expression \initializer): {
+			handleExpression(\initializer);
+		}
+		case \bracket(Expression expression): {
+			handleExpression(expression);
+		}
+		case \this(Expression thisExpression): {
+			handleExpression(thisExpression);
+		}
+		case \infix(Expression lhs, str operator, Expression rhs): {
+			handleExpression(lhs);
+			handleExpression(rhs);
+		}
+		case \postfix(Expression operand, str operator): {
+			handleExpression(operand);
+		}
+		case \prefix(str operator, Expression operand): {
+			handleExpression(operand);
+		}
+		case \memberValuePair(str name, Expression \value): {     
+			handleExpression(\value);     
+		}
+		case \singleMemberAnnotation(str typeName, Expression \value): {
+			handleExpression(\value);
+		}
+		default:
+			return;
 	}
 }
 
