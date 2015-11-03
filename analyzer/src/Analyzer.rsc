@@ -84,14 +84,16 @@ public list[value] declarationToLines(Declaration ast)
 			return [f];
 		case \initializer(Statement initializerBody):
 			return statementToLines(initializerBody);
-		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): {
+		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl):
 			return handleMethodOrConstructor(name, impl, exceptions);
-		}
 		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):
 			return name + exceptions; // recheck
-		case \constructor(str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): {
+		case \constructor(str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl):
 			return handleMethodOrConstructor(name, impl, exceptions);
-		}
+		case \variables(Type \type, list[Expression] \fragments):
+			for (Expression expr <- \fragments) {
+				handleExpression(expr);
+			}
 		default:
 			return [];
 	}
@@ -121,10 +123,15 @@ public list[value] statementToLines(Statement statement) {
 	 	case \empty():
    			return [];
 		/* Oneliners */
-		case a:\assert(Expression expression):
+		case a:\assert(Expression expression): {
+			handleExpression(expression);
 			return [a];
-		case a:\assert(Expression expression, Expression message):
+		}
+		case a:\assert(Expression expression, Expression message): {
+			handleExpression(expression);
+			handleExpression(message);
 			return [a];
+		}
 		case b:\break():
 			return [b];
 		case b:\break(str label):
@@ -135,57 +142,87 @@ public list[value] statementToLines(Statement statement) {
 			return [c];
 		case l:\label(str name, Statement body):
 			return [l];
-		case r:\return(Expression expression):
+		case r:\return(Expression expression): {
+		handleExpression(expression);
 			return [r];
+		}
 		case r:\return():
 			return [r];
-		case c:\case(Expression expression):
+		case c:\case(Expression expression): {
+			handleExpression(expression);
 			return [c];
+		}
 		case d:\defaultCase():
 			return [d];
-		case t:\throw(Expression expression):
+		case t:\throw(Expression expression): {
+			handleExpression(expression);
 			return [t];
+		}
 		case d:\declarationStatement(Declaration declaration):
 			return [d];
-		case c:\constructorCall(bool isSuper, Expression expr, list[Expression] arguments):
+		case c:\constructorCall(bool isSuper, Expression expr, list[Expression] arguments): {
+			for (Expression epxression <- expr + arguments) {
+				handleExpression(expression);
+			}
 			return [c];
-   		case c:\constructorCall(bool isSuper, list[Expression] arguments):
+		}
+   		case c:\constructorCall(bool isSuper, list[Expression] arguments): {
+   			for (Expression epxression <- arguments) {
+				handleExpression(expression);
+			}
    			return [c];
+   		}
    		/* Multiliners */
-		case e:\expressionStatement(Expression stmt):
+		case e:\expressionStatement(Expression stmt): {
+			handleExpression(stmt);
 			return [e];
+		}
 		case b:\block(list[Statement] statements):
 			return "{" +  ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
 		case \do(Statement body, Expression condition): {
 			if (activeMethod != "")
 				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
-				
+			
+			handleExpression(condition);
 			return statementToLines(body);
 		}
-		case \foreach(Declaration parameter, Expression collection, Statement body):
+		case \foreach(Declaration parameter, Expression collection, Statement body): {
+			handleExpression(collection);
 			return statementToLines(body);
+		}
 		case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body): {
 			if (activeMethod != "")
-					numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
-					
+				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+			
+			for (Expression expr <- initializers + condition + updaters) {
+				handleExpression(expr);
+			}
 			return statementToLines(body);
 		}
-		case \for(list[Expression] initializers, list[Expression] updaters, Statement body):					
+		case \for(list[Expression] initializers, list[Expression] updaters, Statement body): {
+			for (Expression expr <- initializers + updaters) {
+				handleExpression(expr);
+			}
 			return statementToLines(body);
+		}
 		case \if(Expression condition, Statement thenBranch): {
 			if (activeMethod != "")
 				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
-				
+			
+			handleExpression(condition);
 			return statementToLines(thenBranch);
 		}
 		case \if(Expression condition, Statement thenBranch, Statement elseBranch): {
 			if (activeMethod != "")
 				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
-					
+			
+			handleExpression(condition);
 			return statementToLines(thenBranch) + statementToLines(elseBranch);
 		}
-		case \switch(Expression expression, list[Statement] statements):
+		case \switch(Expression expression, list[Statement] statements): {
+			handleExpression(expression);
 			return "{" + ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
+		}
 		case \synchronizedStatement(Expression lock, Statement body):
 			return statementToLines(body);
 		case \try(Statement body, list[Statement] catchClauses):
@@ -197,11 +234,22 @@ public list[value] statementToLines(Statement statement) {
     	case \while(Expression condition, Statement body): {
     		if (activeMethod != "")
 				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
-				
+			
+			handleExpression(condition);
     		return statementToLines(body);
     	}
     	default:
     		return [];
+	}
+}
+
+public void handleExpression(Expression expr) {
+	if (activeMethod == "")
+		return
+	
+	switch(expr) {
+		case \conditional(Expression expression, Expression thenBranch, Expression elseBranch):
+			numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(expression);
 	}
 }
 
