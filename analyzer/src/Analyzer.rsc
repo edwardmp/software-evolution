@@ -6,22 +6,46 @@ import Map;
 import Set;
 import lang::java::m3::AST;
 
+/*
+ * A map containing the lines in each method, after locToLines has been run.
+ */
 private map[str,list[value]] linesPerMethod = ();
+
+/*
+ * Indicates whether analysis has been run and lines per method can be obtained.
+ */
 private bool analysisRan = false;
 
+/*
+ * Calculate the volume of all sourcefiles in a location.
+ * The location must be specified using the file-scheme.
+ */
 public int calculateVolume(loc location) = size(locToLines(location));
 
+/*
+ * Get a list of the lines in all sourcefiles in a location, the way they
+ * are represented in an AST. The location must be specified using the
+ * file-scheme.
+ */
 public list[value] locToLines(loc location) {
 	list[value] lines = astsToLines(locToAsts(location));
 	analysisRan = true;
 	return lines;
 }
 
+/*
+ * Get a list of the lines in a set of Declarations (ASTs) the way they
+ * are represented in the ASTs.
+ */
 public list[value] astsToLines(set[Declaration] decs)
 {
 	return ([] | it + dec | dec <- mapper(decs, declarationToLines));
 }
 
+/*
+ * Get a list of the lines in a Declaration (AST) the way they are
+ * represented in the AST.
+ */
 public list[value] declarationToLines(Declaration ast)
 {	
 	switch (ast) {
@@ -66,6 +90,9 @@ public list[value] declarationToLines(Declaration ast)
 	}
 }
 
+/*
+ * Get a list of lines in a Statement.
+ */
 public list[value] statementToLines(Statement statement) {
 	switch (statement) {
 	 	case \empty():
@@ -135,10 +162,19 @@ public list[value] statementToLines(Statement statement) {
 	}
 }
 
+/*
+ * Get a set of Declarations (an AST) from a location.
+ * The location must be a directory and must be specified
+ * using the file-scheme. E.g. |file:///C:/Users/Test/My%20Documents/Test|.
+ */
 public set[Declaration] locToAsts(loc location) {
 	return createAstsFromDirectory(location, true);
 }
 
+/*
+ * Returns a map with a list of the lines for each method,
+ * mapped from the name of the method.
+ */
 public map[str,list[value]] getLinesPerMethod() {
 	if (analysisRan) {
 		return linesPerMethod;
@@ -148,5 +184,11 @@ public map[str,list[value]] getLinesPerMethod() {
 	}
 }
 
-// Minus 2 lines for the opening and closing bracket surrounding the method body
-public map[str,int] numberOfLinesPerMethod() = (() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
+/*
+ * Returns a map with the number of lines for each method,
+ * mapped from the name of the method.
+ */
+public map[str,int] numberOfLinesPerMethod() {
+	// Minus 2 lines for the opening and closing bracket surrounding the method body
+	(() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
+}
