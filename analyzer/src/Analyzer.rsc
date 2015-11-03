@@ -7,10 +7,6 @@ import Set;
 import String;
 import lang::java::m3::AST;
 
-private map[str, int] numberOfConditionsEncounteredPerMethod = ();
-
-private str activeMethod = "";
-
 /*
  * A map containing the lines in each method, after locToLines has been run.
  */
@@ -20,6 +16,16 @@ private map[str, list[value]] linesPerMethod = ();
  * Indicates whether analysis has been run and lines per method can be obtained.
  */
 private bool analysisRan = false;
+
+/*
+ * A map containing the cyclomatic complexity for each method, after locToLines has been run.
+ */
+private map[str, int] numberOfConditionsEncounteredPerMethod = ();
+
+/*
+ * A string that saves the currently investigated method for the complexity.
+ */
+private str activeMethod = "";
 
 /*
  * Calculate the volume of all sourcefiles in a location.
@@ -91,6 +97,9 @@ public list[value] declarationToLines(Declaration ast)
 	}
 }
 
+/*
+ * Wrapper for evaluation code common to both (non-abstract) methods and constructors.
+ */
 public list[value] handleMethodOrConstructor(str nameOfMethod, Statement impl,  list[Expression] exceptions) {
 	str previousActiveMethod = activeMethod;
 	activeMethod = nameOfMethod;
@@ -196,6 +205,9 @@ public list[value] statementToLines(Statement statement) {
 	}
 }
 
+/*
+ * Given an Expression, count the number of logical conditions within it.
+ */
 public int countConditions(Expression expr) {
 	switch (expr) {
 		case \infix(Expression lhs, str operator, Expression rhs):
@@ -246,6 +258,10 @@ public map[str,int] numberOfLinesPerMethod() {
 	}
 }
 
+/*
+ * Returns a map with the cyclomatic complexity,
+ * mapped from the name of the method.
+ */
 public map[str, int] getComplexityPerMethod() {
 	if (analysisRan) {
 		return numberOfConditionsEncounteredPerMethod;
