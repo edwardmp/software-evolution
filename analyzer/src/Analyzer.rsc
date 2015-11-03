@@ -1,20 +1,25 @@
 module Analyzer
 
+import Exception;
 import List;
+import Map;
 import Set;
 import lang::java::m3::AST;
 
-public set[Declaration] locToAsts(loc location) {
-	return createAstsFromDirectory(location, true);
+private map[str,list[value]] linesPerMethod = ();
+private bool analysisRan = false;
+
+public int calculateVolume(loc location) = size(locToLines(location));
+
+public list[value] locToLines(loc location) {
+	list[value] lines = astsToLines(locToAsts(location));
+	analysisRan = true;
+	return lines;
 }
 
 public list[value] astsToLines(set[Declaration] decs)
 {
 	return ([] | it + dec | dec <- mapper(decs, declarationToLines));
-}
-
-public list[value] locToLines(loc location) {
-	return astsToLines(locToAsts(location));
 }
 
 public list[value] declarationToLines(Declaration ast)
@@ -26,17 +31,16 @@ public list[value] declarationToLines(Declaration ast)
 			return package + imports + ([] | it + x | x <- mapper(types, declarationToLines));
 		case \enum(str name, list[Type] implements, list[Declaration] constants, list[Declaration] body):
 			return "{" + implements + constants + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
-		case \class(str name, list[Type] extends, list[Type] implements, list[Declaration] body):
-			{
-				list[value] extImpl = extends + implements;
-				
-				if (isEmpty(extImpl)) {
-					return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
-				}
-				else {
-					return extImpl + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
-				}
+		case \class(str name, list[Type] extends, list[Type] implements, list[Declaration] body): {
+			list[value] extImpl = extends + implements;
+			
+			if (isEmpty(extImpl)) {
+				return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 			}
+			else {
+				return extImpl + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+			}
+		}
 		case \class(list[Declaration] body):
 			return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 		case \interface(str name, list[Type] extends, list[Type] implements, list[Declaration] body):
@@ -45,12 +49,18 @@ public list[value] declarationToLines(Declaration ast)
 			return [f];
 		case \initializer(Statement initializerBody):
 			return statementToLines(initializerBody);
-		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl):
-			return exceptions + statementToLines(impl);
+		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): {
+			list[value] body = statementToLines(impl);
+			linesPerMethod += (name : body);
+			return exceptions + body;
+		}
 		case \method(Type \return, str name, list[Declaration] parameters, list[Expression] exceptions):
 			return name + exceptions; // recheck
-		case \constructor(str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl):
-			return exceptions + statementToLines(impl);
+		case \constructor(str name, list[Declaration] parameters, list[Expression] exceptions, Statement impl): {
+			list[value] body = statementToLines(impl);
+			linesPerMethod += (name : body);
+			return exceptions + body;
+		}
 		default:
 			return [];
 	}
@@ -124,3 +134,19 @@ public list[value] statementToLines(Statement statement) {
     		return [];
 	}
 }
+
+public set[Declaration] locToAsts(loc location) {
+	return createAstsFromDirectory(location, true);
+}
+
+public map[str,list[value]] getLinesPerMethod() {
+	if (analysisRan) {
+		return linesPerMethod;
+	}
+	else {
+		throw AssertionFailed("Analysis not ran. Run locToLines first.");
+	}
+}
+
+// Minus 2 lines for the opening and closing bracket surrounding the method body
+public map[str,int] numberOfLinesPerMethod() = (() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
