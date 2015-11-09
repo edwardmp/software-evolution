@@ -10,7 +10,7 @@ import lang::java::m3::AST;
 /*
  * A map containing the lines in each method, after locToLines has been run.
  */
-private map[str, list[value]] linesPerMethod = ();
+private map[str, map[str, list[value]]] linesPerMethod = ();
 
 /*
  * Indicates whether analysis has been run and lines per method can be obtained.
@@ -26,6 +26,8 @@ private map[str, int] numberOfConditionsEncounteredPerMethod = ();
  * A string that saves the currently investigated method for the complexity.
  */
 private str activeMethod = "";
+
+private str activeClass = "";
 
 /*
  * Calculate the volume of all sourcefiles in a location.
@@ -67,14 +69,21 @@ public list[value] declarationToLines(Declaration ast)
 		case \enum(str name, list[Type] implements, list[Declaration] constants, list[Declaration] body):
 			return "{" + implements + constants + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 		case \class(str name, list[Type] extends, list[Type] implements, list[Declaration] body): {
+			str previousActiveClass = activeClass;
+			activeClass = name;
+			
 			list[value] extImpl = extends + implements;
 			
+			list[value] result;
 			if (isEmpty(extImpl)) {
-				return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+				result = "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 			}
 			else {
-				return extImpl + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+				result = extImpl + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
 			}
+			
+			activeClass = previousActiveClass;
+			return result;
 		}
 		case \class(list[Declaration] body):
 			return "{" + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
@@ -113,7 +122,11 @@ public list[value] handleMethodOrConstructor(str nameOfMethod, Statement impl,  
 	list[value] body = statementToLines(impl);
 	
 	activeMethod = previousActiveMethod;
-	linesPerMethod += (nameOfMethod : body);
+
+	if (activeClass notin linesPerMethod)
+		linesPerMethod += (activeClass: ());
+		
+	linesPerMethod[activeClass] += (nameOfMethod : body);
 	
 	return exceptions + body;
 }
@@ -416,10 +429,10 @@ public set[Declaration] locToAsts(loc location) {
 }
 
 /*
- * Returns a map with a list of the lines for each method,
- * mapped from the name of the method.
+ * Returns a map from the name of each class, to a map from the name of
+ * each method in that class to the lines in that method.
  */
-public map[str,list[value]] getLinesPerMethod() {
+public map[str, map[str, list[value]]] getListOfLinesPerMethod() {
 	if (analysisRan) {
 		return linesPerMethod;
 	}
@@ -429,13 +442,17 @@ public map[str,list[value]] getLinesPerMethod() {
 }
 
 /*
- * Returns a map with the number of lines for each method,
- * mapped from the name of the method.
+ * Returns a map from the name of each class to a map from name of each method to 
+ * the the number of lines for each method.
  */
-public map[str,int] numberOfLinesPerMethod() {
+public map[str, map[str, int]] numberOfLinesPerMethod() {
 	if (analysisRan) {
-		// Minus 2 lines for the opening and closing bracket surrounding the method body
-		return (() | it + (method : size(linesPerMethod[method]) - 2) | method <- linesPerMethod);
+		map[str, map[str, int]] result = ();
+		for (class <- linesPerMethod) {
+			// Minus 2 lines for the opening and closing bracket surrounding the method body
+			result += (class : (() | it + (method : size(linesPerMethod[class][method]) - 2) | method <- linesPerMethod[class]));	
+		}
+		return result;	
 	}
 	else {
 		throw AssertionFailed("Analysis not ran. Run locToLines first.");
