@@ -479,17 +479,19 @@ public map[str, int] getComplexityPerMethod() {
 
 public real getDuplicationPercentageForLocation(loc location) {
 	list[str] linesWithoutCommentsInAllFiles = getSourceLinesInAllJavaFiles(location);
-	set[list[str]] blocksOfSixConsecutiveLines = {};
+	map[str, bool] blocksOfSixConsecutiveLines = ();
 	int numberOfDuplicates = 0;
 	int blocksFound = 0;
 	for (int i <- [0..(size(linesWithoutCommentsInAllFiles) - 5)]) {
 		list[str] blockOfSixLines = linesWithoutCommentsInAllFiles[i..(i + 6)];
-		if (blockOfSixLines in blocksOfSixConsecutiveLines) {
+		// use string as key because no hashing function present in rascal, maps hash keys so using concat of string as key works also
+		str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
+		if (sixLinesAsKey in blocksOfSixConsecutiveLines) {
 			numberOfDuplicates += 1;
 		}
 		else {
 			// only add when it is not present yet, adding twice adds no value
-			blocksOfSixConsecutiveLines += blockOfSixLines;
+			blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
 		}
 		blocksFound += 1;
 	}
