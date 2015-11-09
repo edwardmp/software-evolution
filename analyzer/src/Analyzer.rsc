@@ -6,6 +6,7 @@ import Map;
 import Set;
 import String;
 import lang::java::m3::AST;
+import IO;
 
 /*
  * A map containing the lines in each method, after locToLines has been run.
@@ -470,4 +471,82 @@ public map[str, int] getComplexityPerMethod() {
 	else {
 		throw AssertionFailed("Analysis not ran. Run locToLines first.");
 	}
+}
+
+public list[str] getSourceLinesInAllJavaFiles(loc project) {
+    list[loc] allFileLocations = allFilesAtLocation(project);
+    list[str] allLinesInFiles = ([] | it + linesInFile | linesInFile <- mapper(allFileLocations, readFileLines));
+
+    // defines if we are in the content of a multi line comment
+    bool inMultiLineComment = false;
+    return for (str line <- allLinesInFiles) {
+    	if (inMultiLineComment) {
+    		println("hoi");
+    		// line of form [comment] */ [code]
+	    	if (/.*\*\/\s*<code:(.*)>/ := line) {
+	    		if (!isEmpty(code)) {
+	    			append code;
+	    		}
+	    		
+	    		inMultiLineComment = false;
+	    	}
+    	}
+    	// line of form [code] // [comment]
+    	else if (/\s*<code:(.*?)>\s*\/\/.*/ := line) {
+    		println("hoi");
+    		if (!isEmpty(code)) {
+	    		append code;
+	    	}
+    	} 
+    	// line of form [code] /* [comment] */ [code]
+    	else if (/\s*<code1:(.*?)>\s*\/\*.*\*\/\s*<code2:(.*)>/ := line) {
+    		println("hoi");
+    		if (!isEmpty(code1)) {
+	    		append code1;
+	    	}
+	    	if (!isEmpty(code2)) {
+	    		append code2;
+	    	}	
+    	}
+    	// line of form [code] /* [comment]
+    	else if (/\s*<code:(.*?)>\s*\/\*.*/ := line) {
+    		println("hoi");
+    		inMultiLineComment = true;
+		
+			if (!isEmpty(code)) {
+    			append code;
+    		}
+    	}
+    	else if(/\A\s*<code:(.*)>\z/ := line) {
+    		if (!isEmpty(code)) {
+	    		append code;
+    		}
+    	}
+    }   
+}
+
+/*
+ * For a given location, recursively find all Java files contained in it.
+ */
+public list[loc] allFilesAtLocation(loc location) {
+	if (isDirectory(location)) {
+		list [loc] allLocationContents = location.ls;		
+		list [loc] files = [];
+		
+		for(loc fileOrDir <- allLocationContents) {
+			if (isDirectory(fileOrDir)) {
+				// recurse on subdirectory
+				files += allFilesAtLocation(fileOrDir);
+			} else {
+				// only proceed on java files
+				str lastSegmentInPath = fileOrDir.file;
+				if (/.*\.java/ :=  lastSegmentInPath) {
+					files += fileOrDir;
+				}
+			}
+		}
+		return files;
+	} else {
+		return [location];
+	} 
 }
