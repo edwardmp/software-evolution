@@ -487,7 +487,10 @@ public real getDuplicationPercentageForLocation(loc location) {
 		if (blockOfSixLines in blocksOfSixConsecutiveLines) {
 			numberOfDuplicates += 1;
 		}
-		blocksOfSixConsecutiveLines += blockOfSixLines;
+		else {
+			// only add when it is not present yet, adding twice adds no value
+			blocksOfSixConsecutiveLines += blockOfSixLines;
+		}
 		blocksFound += 1;
 	}
 	
@@ -569,7 +572,8 @@ public list[loc] allFilesAtLocation(loc location) {
 			if (isDirectory(fileOrDir)) {
 				// recurse on subdirectory
 				files += allFilesAtLocation(fileOrDir);
-			} else {
+			} 
+			else {
 				// only add Java files to file list
 				str lastSegmentInPath = fileOrDir.file;
 				if (/.*\.java/ :=  lastSegmentInPath) {
@@ -578,7 +582,8 @@ public list[loc] allFilesAtLocation(loc location) {
 			}
 		}
 		return files;
-	} else {
+	} 
+	else {
 		return [location];
 	} 
 }
