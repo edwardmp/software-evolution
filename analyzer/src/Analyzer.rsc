@@ -38,8 +38,12 @@ public int calculateVolume(loc location) = size(locToLines(location));
 
 /*
  * Get a list of the lines in all sourcefiles in a location, the way they
- * are represented in an AST. The location must be specified using the
- * file-scheme.
+ * are represented in an AST. We make an estimation of the amount of lines based on
+ * general Java code style conventions. E.g. if we find an if statement and a opening curly brace
+ * on a new line we count them both as 1 line because this is the style convention.
+ * This is in contrast to the getSourceLinesInAllJavaFiles() function which does look at actual source lines
+ * regardless of the coding style.
+ * The location must be specified using the file-scheme.
  */
 public list[value] locToLines(loc location) {
 	list[value] lines = astsToLines(locToAsts(location));
@@ -473,16 +477,37 @@ public map[str, int] getComplexityPerMethod() {
 	}
 }
 
+public real getDuplicationPercentageForLocation(loc location) {
+	list[str] linesWithoutCommentsInAllFiles = getSourceLinesInAllJavaFiles(location);
+	set[list[str]] blocksOfSixConsecutiveLines = {};
+	int numberOfDuplicates = 0;
+	int blocksFound = 0;
+	for (int i <- [0..(size(linesWithoutCommentsInAllFiles) - 5)]) {
+		list[str] blockOfSixLines = linesWithoutCommentsInAllFiles[i..(i + 6)];
+		if (blockOfSixLines in blocksOfSixConsecutiveLines) {
+			numberOfDuplicates += 1;
+		}
+		blocksOfSixConsecutiveLines += blockOfSixLines;
+		blocksFound += 1;
+	}
+	
+	return ((numberOfDuplicates * 1.0) / blocksFound) * 100;
+}
+
 /*
- * For a given location, get all lines contained in files at that location
+ * For a given location, get all source lines contained in files at that location.
+ * These are the actual source code lines, not based on our interpretation of the AST
+ * of those files. The latter is done in the locToLines() function.
  */
 public list[str] getSourceLinesInAllJavaFiles(loc project) {
     list[loc] allFileLocations = allFilesAtLocation(project);
     list[str] allLinesInFiles = ([] | it + linesInFile | linesInFile <- mapper(allFileLocations, readFileLines));
-	
-	return stripCommentsInLines(allLinesInFiles);
+	return linesWithoutCommentsInAllFiles = stripCommentsInLines(allLinesInFiles);
 }
 
+/*
+ * When passed a list of all lines in files, strips comments out of it.
+ */
 public list[str] stripCommentsInLines(list[str] allLines) {
     // defines if we are in the content of a multi line comment
     bool inMultiLineComment = false;
@@ -499,7 +524,6 @@ public list[str] stripCommentsInLines(list[str] allLines) {
     	}
     	// line of form [code] // [comment]
     	else if (/\A\s*<code:(.*?)>\s*\/\/.*\z/ := line) {
-    		println("hoi");
     		if (!isEmpty(code)) {
 	    		append code;
 	    	}
@@ -517,14 +541,15 @@ public list[str] stripCommentsInLines(list[str] allLines) {
     	}
     	// line of form [code] /* [comment]
     	else if (/\A\s*<code:(.*?)>\s*\/\*.*\z/ := line) {
-    		println("hoi");
     		inMultiLineComment = true;
 		
 			if (!isEmpty(code)) {
     			append code;
     		}
     	}
+    	// consists of any amount of whitespace plus optional code block
     	else if(/\A\s*<code:(.*)>\z/ := line) {
+    		// check if code block exists before adding
     		if (!isEmpty(code)) {
 	    		append code;
     		}
@@ -545,7 +570,7 @@ public list[loc] allFilesAtLocation(loc location) {
 				// recurse on subdirectory
 				files += allFilesAtLocation(fileOrDir);
 			} else {
-				// only proceed on java files
+				// only add Java files to file list
 				str lastSegmentInPath = fileOrDir.file;
 				if (/.*\.java/ :=  lastSegmentInPath) {
 					files += fileOrDir;

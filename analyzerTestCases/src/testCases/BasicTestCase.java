@@ -31,5 +31,17 @@ public class BasicTestCase {
 	
 	public String getMonthString() {
 		return monthString;
+		return monthString;
+		return monthString;
+		return monthString;
+		return monthString;
+		return monthString;
+		
+		return monthString;
+		return monthString;
+		return monthString;
+		return monthString;
+		return monthString;
+		return monthString;
 	}
 }
