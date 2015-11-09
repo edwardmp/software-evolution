@@ -473,17 +473,23 @@ public map[str, int] getComplexityPerMethod() {
 	}
 }
 
+/*
+ * For a given location, get all lines contained in files at that location
+ */
 public list[str] getSourceLinesInAllJavaFiles(loc project) {
     list[loc] allFileLocations = allFilesAtLocation(project);
     list[str] allLinesInFiles = ([] | it + linesInFile | linesInFile <- mapper(allFileLocations, readFileLines));
+	
+	return stripCommentsInLines(allLinesInFiles);
+}
 
+public list[str] stripCommentsInLines(list[str] allLines) {
     // defines if we are in the content of a multi line comment
     bool inMultiLineComment = false;
-    return for (str line <- allLinesInFiles) {
+    return for (str line <- allLines) {
     	if (inMultiLineComment) {
-    		println("hoi");
     		// line of form [comment] */ [code]
-	    	if (/.*\*\/\s*<code:(.*)>/ := line) {
+	    	if (/\A.*\*\/\s*<code:(.*)>\z/ := line) {
 	    		if (!isEmpty(code)) {
 	    			append code;
 	    		}
@@ -492,24 +498,25 @@ public list[str] getSourceLinesInAllJavaFiles(loc project) {
 	    	}
     	}
     	// line of form [code] // [comment]
-    	else if (/\s*<code:(.*?)>\s*\/\/.*/ := line) {
+    	else if (/\A\s*<code:(.*?)>\s*\/\/.*\z/ := line) {
     		println("hoi");
     		if (!isEmpty(code)) {
 	    		append code;
 	    	}
     	} 
-    	// line of form [code] /* [comment] */ [code]
-    	else if (/\s*<code1:(.*?)>\s*\/\*.*\*\/\s*<code2:(.*)>/ := line) {
-    		println("hoi");
+    	// line of form [code1] /* [comment] */ [code2]
+    	else if (/\A\s*<code1:(.*?)>\s*\/\*.*\*\/\s*<code2:(.*)>\z/ := line) {
     		if (!isEmpty(code1)) {
 	    		append code1;
 	    	}
 	    	if (!isEmpty(code2)) {
-	    		append code2;
+	    		for(lineInCode2 <- stripCommentsInLines([code2])) {
+	    			append lineInCode2;
+	    		}
 	    	}	
     	}
     	// line of form [code] /* [comment]
-    	else if (/\s*<code:(.*?)>\s*\/\*.*/ := line) {
+    	else if (/\A\s*<code:(.*?)>\s*\/\*.*\z/ := line) {
     		println("hoi");
     		inMultiLineComment = true;
 		
@@ -522,7 +529,7 @@ public list[str] getSourceLinesInAllJavaFiles(loc project) {
 	    		append code;
     		}
     	}
-    }   
+    }
 }
 
 /*
