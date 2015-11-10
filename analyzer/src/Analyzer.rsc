@@ -21,7 +21,7 @@ private bool analysisRan = false;
 /*
  * A map containing the cyclomatic complexity for each method, after locToLines has been run.
  */
-private map[str, int] numberOfConditionsEncounteredPerMethod = ();
+private map[str, map[str, int]] numberOfConditionsEncounteredPerMethod = ();
 
 /*
  * A string that saves the currently investigated method for the complexity.
@@ -141,7 +141,7 @@ public list[value] handleMethodOrConstructor(str nameOfMethod, Statement impl,  
 	str previousActiveMethod = activeMethod;
 	activeMethod = nameOfMethod;
 	
-	numberOfConditionsEncounteredPerMethod += (activeMethod : 1);
+	numberOfConditionsEncounteredPerMethod[activeClass] += (activeMethod : 1);
 	list[value] body = statementToLines(impl);
 	
 	activeMethod = previousActiveMethod;
@@ -223,7 +223,7 @@ public list[value] statementToLines(Statement statement) {
 			return "{" +  ([] | it + x | x <- mapper(statements, statementToLines)) + "}";
 		case \do(Statement body, Expression condition): {
 			if (activeMethod != "")
-				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
 			return statementToLines(body);
@@ -234,7 +234,7 @@ public list[value] statementToLines(Statement statement) {
 		}
 		case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body): {
 			if (activeMethod != "")
-				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			for (Expression expr <- initializers + condition + updaters) {
 				handleExpression(expr);
@@ -249,14 +249,14 @@ public list[value] statementToLines(Statement statement) {
 		}
 		case \if(Expression condition, Statement thenBranch): {
 			if (activeMethod != "")
-				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
 			return statementToLines(thenBranch);
 		}
 		case \if(Expression condition, Statement thenBranch, Statement elseBranch): {
 			if (activeMethod != "")
-				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
 		
@@ -300,7 +300,7 @@ public list[value] statementToLines(Statement statement) {
 				
 				int numberOfCases = size(casesPlusDefault);
 				if (numberOfCases != 0)
-					numberOfConditionsEncounteredPerMethod[activeMethod] += (numberOfCases - 1);
+					numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += (numberOfCases - 1);
 			}
 		
 			handleExpression(expression);
@@ -316,7 +316,7 @@ public list[value] statementToLines(Statement statement) {
     		return statementToLines(body);
     	case \while(Expression condition, Statement body): {
     		if (activeMethod != "")
-				numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(condition);
+				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
     		return statementToLines(body);
@@ -381,7 +381,7 @@ public void handleExpression(Expression expr) {
 		{
 			handleExpression(thenBranch);
 			handleExpression(elseBranch);
-			numberOfConditionsEncounteredPerMethod[activeMethod] += countConditions(expression);
+			numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(expression);
 		}
 		case \fieldAccess(bool isSuper, Expression expression, str name): {
 			handleExpression(expression);
@@ -451,6 +451,17 @@ public set[Declaration] locToAsts(loc location) {
 	return createAstsFromDirectory(location, true);
 }
 
+/**
+ * Calculate the rank of complexity of all units at the analyzed location.
+ * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
+ * This representation was implemented to be able to perform calculations with the rankings.
+ */
+public int calculateUnitComplexityRank() {
+	map[str, map[str, int]] complexities = getComplexityPerMethod();
+	map[str, map[str, int]] weights = numberOfLinesPerMethod();
+	//Todo calculate ranking
+}
+
 /*
  * Returns a map from the name of each class, to a map from the name of
  * each method in that class to the lines in that method.
@@ -486,7 +497,7 @@ public map[str, map[str, int]] numberOfLinesPerMethod() {
  * Returns a map with the cyclomatic complexity,
  * mapped from the name of the method.
  */
-public map[str, int] getComplexityPerMethod() {
+public map[str, map[str, int]] getComplexityPerMethod() {
 	if (analysisRan) {
 		return numberOfConditionsEncounteredPerMethod;
 	}
