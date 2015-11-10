@@ -37,8 +37,8 @@ private int totalVolume = 0;
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
  * This representation was implemented to be able to perform calculations with the rankings.
  */
- public int calculateVolumeRank(loc location) {
- 	int volume = calculateVolume(location);
+ public int calculateVolumeRank() {
+ 	int volume = calculateVolume();
  	if (volume < 66)
  		return 2;
 	if (volume < 246)
@@ -46,6 +46,25 @@ private int totalVolume = 0;
 	if (volume < 665)
 		return 0;
 	if (volume < 1310)
+		return -1;
+	return -2;
+ }
+
+/**
+ * Calculate the rank of the volume of all sourcefiles in a location.
+ * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
+ * This representation was implemented to be able to perform calculations with the rankings.
+ */
+ public int calculateCodeDuplicationScore(loc location) {
+ 	real volume = getDuplicationPercentageForLocation(location);
+
+ 	if (volume < 3)
+ 		return 2;
+	if (volume < 5)
+		return 1;
+	if (volume < 10)
+		return 0;
+	if (volume < 20)
 		return -1;
 	return -2;
  }
@@ -472,7 +491,7 @@ public set[Declaration] locToAsts(loc location) {
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
  * This representation was implemented to be able to perform calculations with the rankings.
  */
-public map[int, real] calculateUnitComplexityRank() {
+public int calculateUnitComplexityRank() {
 	map[str, map[str, int]] complexities = getComplexityPerMethod();
 	map[str, map[str, int]] weights = numberOfLinesPerMethod();
 	
@@ -519,14 +538,36 @@ public map[int, real] calculateUnitComplexityRank() {
 		}
 	}
 
-	map [int, real] percentageOfLinesIneEachCategory = ();
+	map [int, real] percentageOfLinesInEachCategory = ();
 	for (riskCat <- numberOfLinesInEachRiskCategory) {
 		int riskCatTotalLines = numberOfLinesInEachRiskCategory[riskCat];
 		
-		percentageOfLinesIneEachCategory[riskCat] = ((riskCatTotalLines * 1.0) / totalVolume) * 100;
+		percentageOfLinesInEachCategory[riskCat] = ((riskCatTotalLines * 1.0) / totalVolume) * 100;
 	}
 	
-	return percentageOfLinesIneEachCategory;
+	println(percentageOfLinesInEachCategory);
+	
+	if (percentageOfLinesInEachCategory[3] > 5
+	|| percentageOfLinesInEachCategory[2] > 15
+	|| percentageOfLinesInEachCategory[1] > 50) {
+		return -2;
+	}
+	else if (percentageOfLinesInEachCategory[3] > 0.5
+	|| percentageOfLinesInEachCategory[2] > 10
+	|| percentageOfLinesInEachCategory[1] > 40) {
+		return -1;
+	}
+	else if (percentageOfLinesInEachCategory[2] > 5
+	|| percentageOfLinesInEachCategory[1] > 30) {
+		return 0;
+	}
+	else if (percentageOfLinesInEachCategory[2] > 0.5
+	|| percentageOfLinesInEachCategory[1] > 25) {
+		return 1;
+	}
+	else {
+		return 2;
+	}
 }
 
 /*
