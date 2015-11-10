@@ -49,13 +49,46 @@ private int totalVolume = 0;
 		return -1;
 	return -2;
  }
+ 
+ public int calculateUnitSizeRank() {
+ 	map [str, map[str, int]] numberOfLinesPerMethod = numberOfLinesPerMethod();
+ 
+ 	map [str, map[str, int]] unitSizeRiskCategoryPerMethod = ();
+ 	
+	for (cl <- numberOfLinesPerMethod) {
+		for (meth <- numberOfLinesPerMethod[cl]) {
+			if (cl notin domain(unitSizeRiskCategoryPerMethod)) {
+				unitSizeRiskCategoryPerMethod += (cl : ());
+			}
+			
+			int unitSizeForMethod = numberOfLinesPerMethod[cl][meth];
+			int unitSizeRiskCategory;
+			if (unitSizeForMethod <= 20) {
+				unitSizeRiskCategory = 0;
+			}
+			else if (unitSizeForMethod <= 50) {
+				unitSizeRiskCategory = 1;
+			}
+			else if (unitSizeForMethod <= 100) {
+				unitSizeRiskCategory = 2;
+			}
+			else {
+				unitSizeRiskCategory = 3;
+			}
+			
+			unitSizeRiskCategoryPerMethod[cl] += (meth: unitSizeRiskCategory);
+		}
+	}
+	
+	return generalSIGRankCalculator(generalCategoryPercentageCalculator(unitSizeRiskCategoryPerMethod));
+ }
 
 /**
- * Calculate the rank of the volume of all sourcefiles in a location.
+ * Calculate the score for code duplication of all sourcefiles in a location.
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
  * This representation was implemented to be able to perform calculations with the rankings.
  */
- public int calculateCodeDuplicationScore(loc location) {
+ public int calculateCodeDuplicationRank(loc location) {
  	real volume = getDuplicationPercentageForLocation(location);
 
  	if (volume < 3)
@@ -493,8 +526,6 @@ public set[Declaration] locToAsts(loc location) {
  */
 public int calculateUnitComplexityRank() {
 	map[str, map[str, int]] complexities = getComplexityPerMethod();
-	map[str, map[str, int]] weights = numberOfLinesPerMethod();
-	
 	map [str, map[str, int]] complexitiesRisks = ();
 	
 	for (cl <- complexities) {
@@ -522,31 +553,10 @@ public int calculateUnitComplexityRank() {
 		}
 	}
 	
-	// initialize keys for each category
-	map[int, int] numberOfLinesInEachRiskCategory = ();
-	numberOfLinesInEachRiskCategory += (1: 0);
-	numberOfLinesInEachRiskCategory += (2: 0);
-	numberOfLinesInEachRiskCategory += (3: 0);
-	
-	for (cl <- complexitiesRisks) {
-		for (meth <- complexitiesRisks[cl]) {
-			int numberOfLinesForMethod = weights[cl][meth];
-			int complexityRiskCategory = complexitiesRisks[cl][meth];
-			if (complexityRiskCategory != 0) {
-				numberOfLinesInEachRiskCategory[complexityRiskCategory] += numberOfLinesForMethod;
-			}
-		}
-	}
+	return generalSIGRankCalculator(generalCategoryPercentageCalculator(complexitiesRisks));
+}
 
-	map [int, real] percentageOfLinesInEachCategory = ();
-	for (riskCat <- numberOfLinesInEachRiskCategory) {
-		int riskCatTotalLines = numberOfLinesInEachRiskCategory[riskCat];
-		
-		percentageOfLinesInEachCategory[riskCat] = ((riskCatTotalLines * 1.0) / totalVolume) * 100;
-	}
-	
-	println(percentageOfLinesInEachCategory);
-	
+public int generalSIGRankCalculator(map[int, real] percentageOfLinesInEachCategory) {
 	if (percentageOfLinesInEachCategory[3] > 5
 	|| percentageOfLinesInEachCategory[2] > 15
 	|| percentageOfLinesInEachCategory[1] > 50) {
@@ -568,6 +578,35 @@ public int calculateUnitComplexityRank() {
 	else {
 		return 2;
 	}
+}
+
+public map[int, real] generalCategoryPercentageCalculator(map [str, map[str, int]] riskForEachMethodInClass) {
+	map[str, map[str, int]] weights = numberOfLinesPerMethod();
+	
+	// initialize keys for each category
+	map[int, int] numberOfLinesInEachRiskCategory = ();
+	numberOfLinesInEachRiskCategory += (1: 0);
+	numberOfLinesInEachRiskCategory += (2: 0);
+	numberOfLinesInEachRiskCategory += (3: 0);
+	
+	for (cl <- riskForEachMethodInClass) {
+		for (meth <- riskForEachMethodInClass[cl]) {
+			int numberOfLinesForMethod = weights[cl][meth];
+			int complexityRiskCategory = riskForEachMethodInClass[cl][meth];
+			if (complexityRiskCategory != 0) {
+				numberOfLinesInEachRiskCategory[complexityRiskCategory] += numberOfLinesForMethod;
+			}
+		}
+	}
+
+	map [int, real] percentageOfLinesInEachCategory = ();
+	for (riskCat <- numberOfLinesInEachRiskCategory) {
+		int riskCatTotalLines = numberOfLinesInEachRiskCategory[riskCat];
+		
+		percentageOfLinesInEachCategory[riskCat] = ((riskCatTotalLines * 1.0) / totalVolume) * 100;
+	}
+	
+	return percentageOfLinesInEachCategory;
 }
 
 /*
