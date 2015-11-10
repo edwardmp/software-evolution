@@ -30,6 +30,24 @@ private str activeMethod = "";
 
 private str activeClass = "";
 
+/**
+ * Calculate the rank of the volume of all sourcefiles in a location.
+ * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
+ * This representation was implemented to be able to perform calculations with the rankings.
+ */
+ public int calculateVolumeRank(loc location) {
+ 	int volume = calculateVolume(location);
+ 	if (volume < 8)
+ 		return 2;
+	if (volume < 30)
+		return 1;
+	if (volume < 80)
+		return 0;
+	if (volume < 160)
+		return -1;
+	return -2;
+ }
+
 /*
  * Calculate the volume of all sourcefiles in a location.
  * The location must be specified using the file-scheme.
