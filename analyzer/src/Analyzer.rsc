@@ -141,6 +141,10 @@ public list[value] handleMethodOrConstructor(str nameOfMethod, Statement impl,  
 	str previousActiveMethod = activeMethod;
 	activeMethod = nameOfMethod;
 	
+	// initialize empty map for that class name
+	if (activeClass notin numberOfConditionsEncounteredPerMethod)
+		numberOfConditionsEncounteredPerMethod += (activeClass: ());
+		
 	numberOfConditionsEncounteredPerMethod[activeClass] += (activeMethod : 1);
 	list[value] body = statementToLines(impl);
 	
@@ -448,7 +452,7 @@ public int countConditions(Expression expr) {
  * using the file-scheme. E.g. |file:///C:/Users/Test/My%20Documents/Test|.
  */
 public set[Declaration] locToAsts(loc location) {
-	return createAstsFromDirectory(location, true);
+	return createAstsFromDirectory(location, false);
 }
 
 /**
@@ -515,12 +519,13 @@ public real getDuplicationPercentageForLocation(loc location) {
 		list[str] blockOfSixLines = linesWithoutCommentsInAllFiles[i..(i + 6)];
 		// use string as key because no hashing function present in rascal, maps hash keys so using concat of string as key works also
 		str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
-		if (sixLinesAsKey in blocksOfSixConsecutiveLines) {
+		if (sixLinesAsKey in blocksOfSixConsecutiveLines && !blocksOfSixConsecutiveLines[sixLinesAsKey]) {
 			numberOfDuplicates += 1;
+			blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
 		}
 		else {
 			// only add when it is not present yet, adding twice adds no value
-			blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
+			blocksOfSixConsecutiveLines[sixLinesAsKey] = false;
 		}
 		blocksFound += 1;
 	}
