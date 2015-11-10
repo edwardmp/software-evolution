@@ -32,6 +32,45 @@ private str activeClass = "";
 
 private int totalVolume = 0;
 
+private loc fileLocation;
+
+public void setLocation(loc location) {
+	fileLocation = location;
+}
+
+public real calculateSIGAnalyzabilityScore() {
+	return (calculateVolumeRank() + calculateCodeDuplicationRank() + calculateUnitSizeRank()) / 3.0;
+}
+
+public real calculateSIGChangabilityScore() {
+	return (calculateUnitComplexityRank() + calculateCodeDuplicationRank()) / 2.0;
+}
+
+public real calculateSIGTestabilityScore() {
+	return (calculateUnitComplexityRank() + calculateUnitSizeRank()) / 2.0;
+}
+
+public real calculateTotalAnalysabilityScore() {
+	return (calculateVolumeRank() + calculateUnitComplexityRank() + calculateCodeDuplicationRank() + calculateUnitSizeRank()) / 4.00;
+}
+
+private str numericalScoreToScoreString(real score) {
+	int roundedScore = round(score);
+	
+	switch(roundedScore) {
+		case -2:
+			return "--";
+		case -1:
+			return "-";
+		case 0:
+			return "0";
+		case 1:
+			return "+";
+		case 2:
+			return "++";
+	}
+}
+
 /**
  * Calculate the rank of the volume of all sourcefiles in a location.
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
@@ -88,8 +127,8 @@ private int totalVolume = 0;
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
  * This representation was implemented to be able to perform calculations with the rankings.
  */
- public int calculateCodeDuplicationRank(loc location) {
- 	real volume = getDuplicationPercentageForLocation(location);
+ public int calculateCodeDuplicationRank() {
+ 	real volume = getDuplicationPercentageForLocation();
 
  	if (volume < 3)
  		return 2;
@@ -125,8 +164,8 @@ public int calculateVolume(){
  * regardless of the coding style.
  * The location must be specified using the file-scheme.
  */
-public list[value] locToLines(loc location) {
-	list[value] lines = astsToLines(locToAsts(location));
+public list[value] locToLines() {
+	list[value] lines = astsToLines(locToAsts());
 	analysisRan = true;
 	
 	totalVolume = size(lines);
@@ -515,8 +554,8 @@ public int countConditions(Expression expr) {
  * The location must be a directory and must be specified
  * using the file-scheme. E.g. |file:///C:/Users/Test/My%20Documents/Test|.
  */
-public set[Declaration] locToAsts(loc location) {
-	return createAstsFromDirectory(location, false);
+public set[Declaration] locToAsts() {
+	return createAstsFromDirectory(fileLocation, false);
 }
 
 /**
@@ -653,8 +692,8 @@ public map[str, map[str, int]] getComplexityPerMethod() {
 	}
 }
 
-public real getDuplicationPercentageForLocation(loc location) {
-	list[str] linesWithoutCommentsInAllFiles = getSourceLinesInAllJavaFiles(location);
+public real getDuplicationPercentageForLocation() {
+	list[str] linesWithoutCommentsInAllFiles = getSourceLinesInAllJavaFiles();
 	map[str, bool] blocksOfSixConsecutiveLines = ();
 	int numberOfDuplicates = 0;
 	int blocksFound = 0;
@@ -681,8 +720,8 @@ public real getDuplicationPercentageForLocation(loc location) {
  * These are the actual source code lines, not based on our interpretation of the AST
  * of those files. The latter is done in the locToLines() function.
  */
-public list[str] getSourceLinesInAllJavaFiles(loc project) {
-    list[loc] allFileLocations = allFilesAtLocation(project);
+public list[str] getSourceLinesInAllJavaFiles() {
+    list[loc] allFileLocations = allFilesAtLocation();
     list[str] allLinesInFiles = ([] | it + linesInFile | linesInFile <- mapper(allFileLocations, readFileLines));
 	return linesWithoutCommentsInAllFiles = stripCommentsInLines(allLinesInFiles);
 }
@@ -739,6 +778,11 @@ public list[str] stripCommentsInLines(list[str] allLines) {
     		}
     	}
     }
+}
+
+
+public list[loc] allFilesAtLocation() {
+	return allFilesAtLocation(fileLocation);
 }
 
 /*
