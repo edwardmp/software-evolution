@@ -545,10 +545,11 @@ public list[str] getSourceLinesInAllJavaFiles(loc project) {
 public list[str] stripCommentsInLines(list[str] allLines) {
     // defines if we are in the content of a multi line comment
     bool inMultiLineComment = false;
+ 	
     return for (str line <- allLines) {
     	if (inMultiLineComment) {
-    		// line of form [comment] */ [code]
-	    	if (/\A.*\*\/\s*<code:(.*)>\z/ := line) {
+	    	if (/\A<beforeComment:.*>\*\/\s*<code:(.*)>\z/ := line
+	    	&& (size(findAll(beforeComment, "\""))) % 2 == 0) {
 	    		if (!isEmpty(code)) {
 	    			append code;
 	    		}
@@ -563,7 +564,8 @@ public list[str] stripCommentsInLines(list[str] allLines) {
 	    	}
     	} 
     	// line of form [code1] /* [comment] */ [code2]
-    	else if (/\A\s*<code1:(.*?)>\s*\/\*.*\*\/\s*<code2:(.*)>\z/ := line) {
+    	else if (/\A\s*<code1:(.*?)>\s*\/\*.*\*\/\s*<code2:(.*)>\z/ := line
+    	&& (size(findAll(code1, "\""))) % 2 == 0 && (size(findAll(code2, "\""))) % 2 == 0) {
     		if (!isEmpty(code1)) {
 	    		append code1;
 	    	}
@@ -574,7 +576,7 @@ public list[str] stripCommentsInLines(list[str] allLines) {
 	    	}	
     	}
     	// line of form [code] /* [comment]
-    	else if (/\A\s*<code:(.*?)>\s*\/\*.*\z/ := line) {
+    	else if (/\A\s*<code:(.*?)>\s*\/\*.*\z/ := line && (size(findAll(code, "\""))) % 2 == 0) {
     		inMultiLineComment = true;
 		
 			if (!isEmpty(code)) {
