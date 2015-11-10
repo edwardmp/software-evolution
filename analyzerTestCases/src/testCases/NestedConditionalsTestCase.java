@@ -11,6 +11,23 @@ class NestedConditionalsTestCase {
 		
 		if (true) {
 			System.out.println("ho");
+			if (true)
+				if (true)
+					if (true)
+						if (true)
+							if (true)
+								if (true)
+									if (true)
+										if (true)
+											if (true)
+												if (true)
+													if (true)
+														if (true)
+															if (true)
+																if (true)
+																	if (true)
+																		System.out.println("yo");
+															
 		}
 		System.out.println("yo");
 	}

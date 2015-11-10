@@ -30,6 +30,8 @@ private str activeMethod = "";
 
 private str activeClass = "";
 
+private int totalVolume = 0;
+
 /**
  * Calculate the rank of the volume of all sourcefiles in a location.
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
@@ -37,13 +39,13 @@ private str activeClass = "";
  */
  public int calculateVolumeRank(loc location) {
  	int volume = calculateVolume(location);
- 	if (volume < 8)
+ 	if (volume < 66)
  		return 2;
-	if (volume < 30)
+	if (volume < 246)
 		return 1;
-	if (volume < 80)
+	if (volume < 665)
 		return 0;
-	if (volume < 160)
+	if (volume < 1310)
 		return -1;
 	return -2;
  }
@@ -52,7 +54,15 @@ private str activeClass = "";
  * Calculate the volume of all sourcefiles in a location.
  * The location must be specified using the file-scheme.
  */
-public int calculateVolume(loc location) = size(locToLines(location));
+// check if loctolines is ran
+public int calculateVolume(){
+	if (analysisRan) {
+		return totalVolume;
+	}
+	else {
+		throw AssertionFailed("Analysis not ran. Run locToLines first.");
+	}
+}
 
 /*
  * Get a list of the lines in all sourcefiles in a location, the way they
@@ -66,6 +76,8 @@ public int calculateVolume(loc location) = size(locToLines(location));
 public list[value] locToLines(loc location) {
 	list[value] lines = astsToLines(locToAsts(location));
 	analysisRan = true;
+	
+	totalVolume = size(lines);
 	return lines;
 }
 
@@ -460,10 +472,61 @@ public set[Declaration] locToAsts(loc location) {
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
  * This representation was implemented to be able to perform calculations with the rankings.
  */
-public int calculateUnitComplexityRank() {
+public map[int, real] calculateUnitComplexityRank() {
 	map[str, map[str, int]] complexities = getComplexityPerMethod();
 	map[str, map[str, int]] weights = numberOfLinesPerMethod();
-	//Todo calculate ranking
+	
+	map [str, map[str, int]] complexitiesRisks = ();
+	
+	for (cl <- complexities) {
+		for (meth <- complexities[cl]) {
+			if (cl notin domain(complexitiesRisks)) {
+				complexitiesRisks += (cl : ());
+			}
+			
+			int complexityForMethod = complexities[cl][meth];
+			int complexityRiskCategory;
+			if (complexityForMethod <= 10) {
+				complexityRiskCategory = 0;
+			}
+			else if (complexityForMethod <= 20) {
+				complexityRiskCategory = 1;
+			}
+			else if (complexityForMethod <= 50) {
+				complexityRiskCategory = 2;
+			}
+			else {
+				complexityRiskCategory = 3;
+			}
+			
+			complexitiesRisks[cl] += (meth: complexityRiskCategory);
+		}
+	}
+	
+	// initialize keys for each category
+	map[int, int] numberOfLinesInEachRiskCategory = ();
+	numberOfLinesInEachRiskCategory += (1: 0);
+	numberOfLinesInEachRiskCategory += (2: 0);
+	numberOfLinesInEachRiskCategory += (3: 0);
+	
+	for (cl <- complexitiesRisks) {
+		for (meth <- complexitiesRisks[cl]) {
+			int numberOfLinesForMethod = weights[cl][meth];
+			int complexityRiskCategory = complexitiesRisks[cl][meth];
+			if (complexityRiskCategory != 0) {
+				numberOfLinesInEachRiskCategory[complexityRiskCategory] += numberOfLinesForMethod;
+			}
+		}
+	}
+
+	map [int, real] percentageOfLinesIneEachCategory = ();
+	for (riskCat <- numberOfLinesInEachRiskCategory) {
+		int riskCatTotalLines = numberOfLinesInEachRiskCategory[riskCat];
+		
+		percentageOfLinesIneEachCategory[riskCat] = ((riskCatTotalLines * 1.0) / totalVolume) * 100;
+	}
+	
+	return percentageOfLinesIneEachCategory;
 }
 
 /*

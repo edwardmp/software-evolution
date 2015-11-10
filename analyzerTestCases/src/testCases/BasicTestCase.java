@@ -16,6 +16,7 @@ public class BasicTestCase {
 		Date date = new Date();
 		LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 		int month = localDate.getMonthValue();
+		
 		switch (month) {
 	    	case 1:  
 	    		monthString = "January";
