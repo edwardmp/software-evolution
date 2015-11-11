@@ -3,17 +3,14 @@ module Analyzer
 import Exception;
 import List;
 import Map;
-import String;
 import IO;
 import util::Math;
 
 import CodeDuplicationAnalyzer;
 import ASTTraverser;
  
-private list[value] lines = [];
- 
 /*
- * A map containing the lines in each method, after locToLines has been run.
+ * A map containing a map with all methods and the the lines in those methods.
  */
 private map[str, map[str, list[value]]] linesPerMethod = ();
 
@@ -35,6 +32,7 @@ public void main(loc location) {
 	CodeDuplicationAnalyzer::setLocation(location);
 	ASTTraverser::setLocation(location);
 	linesOfFilesAtFileLocation();
+	linesPerMethod = ASTTraverser::getLinesPerMethod();
 	ASTTraverser::setLinesPerMethod(linesPerMethod);
 	
 	str analyzability = numericalScoreToScoreString(calculateSIGAnalyzabilityScore());
@@ -47,12 +45,11 @@ public void main(loc location) {
 	println("Testability score: <testability>");
 	
 	str totalMaintainability = numericalScoreToScoreString(calculateTotalMaintainabilityScore());
-	println("Maintainability score: <numericalScoreToScoreString>");
-	
+	println("Total maintainability score: <totalMaintainability>");
 }
 
 /*====================================================================================
- * Functions that return SIG score for analyzability aspect
+ * Functions that return SIG score for analyzability aspects
  *====================================================================================
  */
  
@@ -282,7 +279,7 @@ public void throwExceptionWhenAnalysisIsNotRan() {
  * The location must be specified using the file-scheme.
  */
 public void linesOfFilesAtFileLocation() {
-	lines = astsToLines(locToAsts());
+	list[value] lines = astsToLines(locToAsts());
 	totalVolume = size(lines);
 	analysisRan = true;
 }
@@ -302,11 +299,11 @@ public map[str, map[str, list[value]]] getListOfLinesPerMethod() {
  */
 public map[str, map[str, int]] numberOfLinesPerMethod() {
 	throwExceptionWhenAnalysisIsNotRan();
-	
+
 	map[str, map[str, int]] result = ();
-	for (class <- linesPerMethod) {
+	for (cl <- linesPerMethod) {
 		// Minus 2 lines for the opening and closing bracket surrounding the method body
-		result += (class : (() | it + (method : size(linesPerMethod[class][method]) - 2) | method <- linesPerMethod[class]));	
+		result += (cl : (() | it + (meth : size(linesPerMethod[cl][meth]) - 2) | meth <- linesPerMethod[cl]));	
 	}
 	
 	return result;	

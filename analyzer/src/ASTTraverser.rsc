@@ -28,6 +28,11 @@ public void setLinesPerMethod(map[str, map[str, list[value]]] linesForEachMethod
 	linesPerMethod = linesForEachMethod;
 }
 
+public map[str, map[str, list[value]]] getLinesPerMethod()
+{
+	return linesPerMethod;
+}
+
 /*
  * Get a list of the lines in a set of Declarations (ASTs) the way they
  * are represented in the ASTs.
