@@ -49,7 +49,9 @@ public void main(loc location) {
 }
 
 /*====================================================================================
- * Functions that return SIG score for analyzability aspects
+ * Functions that return SIG score for analyzability aspects.
+ * We calculate averages as specified in the paper we were pointed at,
+ * despite this is actually not a usefull metric for the ordinal data we are using.
  *====================================================================================
  */
  
