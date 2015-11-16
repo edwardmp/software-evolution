@@ -53,8 +53,13 @@ public list[value] declarationToLines(Declaration ast)
 			return imports + ([] | it + x | x <- mapper(types, declarationToLines));
 		case \compilationUnit(Declaration package, list[Declaration] imports, list[Declaration] types):
 			return package + imports + ([] | it + x | x <- mapper(types, declarationToLines));
-		case \enum(str name, list[Type] implements, list[Declaration] constants, list[Declaration] body):
-			return "{" + implements + constants + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+		case \enum(str name, list[Type] implements, list[Declaration] constants, list[Declaration] body): {
+			str previousActiveClass = activeClass;
+			activeClass = name;
+			list[value] result = "{" + implements + constants + ([] | it + x | x <- mapper(body, declarationToLines)) + "}";
+			activeClass = previousActiveClass;
+			return result;
+		}
 		case \class(str name, list[Type] extends, list[Type] implements, list[Declaration] body): {
 			str previousActiveClass = activeClass;
 			activeClass = name;

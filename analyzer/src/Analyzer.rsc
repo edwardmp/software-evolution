@@ -152,8 +152,10 @@ public void writeResultsPerMethod() {
 
 /*
  * Calculate the average of a list of integers and round the result to an integer.
+ * Calculates the arithmetic average is quite odd if you apply it on ordinal data,
+ * but this is what the paper says.
  */
-public real calculateAverage(list[int] values) = (sum(values) * 1.0)/size(values);
+public real calculateAverage(list[int] values) = (sum(values) * 1.0) / size(values);
 
 /*====================================================================================
  * Helper functions for SIG score calculation
