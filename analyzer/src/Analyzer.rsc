@@ -82,8 +82,8 @@ public void main(loc location) {
 	
 	printMaintainabilityAspects(volumeRank, duplicationRank, unitSizeRank, unitComplexityRank);
 	
-	writeToFile("Volume rank: <numericalScoreToScoreString(volumeRank)>");
-	writeToFile("Duplication rank: <numericalScoreToScoreString(duplicationRank)>");
+	writeToFile("Volume rank: <totalVolume> =\> <numericalScoreToScoreString(volumeRank)>");
+	writeToFile("Duplication rank: <getDuplicationVolume()> =\> <numericalScoreToScoreString(duplicationRank)>");
 	writeToFile("Unit size rank: <numericalScoreToScoreString(unitSizeRank)>");
 	writeToFile("Unit complexity rank: <numericalScoreToScoreString(unitComplexityRank)>");
 	writeToFile();
