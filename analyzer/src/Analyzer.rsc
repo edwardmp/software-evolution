@@ -10,9 +10,14 @@ import CodeDuplicationAnalyzer;
 import ASTTraverser;
  
 /*
- * A map containing a map with all methods and the the lines in those methods.
+ * A map containing a map with all methods and the the lines in those methods for each class.
  */
 private map[str, map[str, list[value]]] linesPerMethod = ();
+
+/*
+ * A map containing a map with all methods and the risk category for the size of that method for each class.
+ */
+private map [str, map[str, int]] unitSizeRiskCategoryPerMethod = ();
 
 /*
  * Indicates whether analysis has been run and lines per method can be obtained.
@@ -23,53 +28,87 @@ private int totalVolume = 0;
 
 private loc fileLocation;
 
+/*
+ * Set the location to analyze
+ */
 public void setLocation(loc location) {
 	fileLocation = location;
 }
 
+/*
+ * Analyze the contents of a location and create output containing the results.
+ */
 public void main(loc location) {
+	analyze(location);
+	int volumeRank = calculateVolumeRank();
+	int duplicationRank = calculateCodeDuplicationRank();
+	int unitSizeRank = calculateUnitSizeRank();
+	int unitComplexityRank = calculateUnitComplexityRank();
+	
+	printMaintainabilityAspects(volumeRank,duplicationRank,unitSizeRank,unitComplexityRank);
+	
+	writeToFile("Volume rank: <volumeRank>");
+	writeToFile("Duplication rank: <duplicationRank>");
+	writeToFile("Unit size rank: <unitSizeRank>");
+	writeToFile("Unit complexity rank: <unitComplexityRank>");
+	writeToFile();
+	
+	writeToFile("Size and complexity of each analyzed method:");
+	writeResultsPerMethod();
+	println("More specific results were written to resultOfAnalysis.txt in the analyzed location.");
+}
+
+/*
+ * Analyze the contents of a location.
+ */
+public void analyze(loc location) {
 	Analyzer::setLocation(location);
 	CodeDuplicationAnalyzer::setLocation(location);
 	ASTTraverser::setLocation(location);
 	linesOfFilesAtFileLocation();
 	linesPerMethod = ASTTraverser::getLinesPerMethod();
 	ASTTraverser::setLinesPerMethod(linesPerMethod);
-	
-	str analyzability = numericalScoreToScoreString(calculateSIGAnalyzabilityScore());
+}
+
+/*
+ * Write the scores for the different aspects of maintainability to the results file.
+ */
+public void printMaintainabilityAspects(int volumeRank, int duplicationRank, int unitSizeRank, int unitComplexityRank) {
+	list[int] analyzabilityAspects = [volumeRank,duplicationRank,unitSizeRank];
+	str analyzability = numericalScoreToScoreString(calculateAverage(analyzabilityAspects));
 	println("Analyzability score: <analyzability>");
 	
-	str changability = numericalScoreToScoreString(calculateSIGChangabilityScore());
+	list[int] changabilityAspects = [unitComplexityRank,duplicationRank];
+	str changability = numericalScoreToScoreString(calculateAverage(changabilityAspects));
 	println("Changability score: <changability>");
 	
-	str testability = numericalScoreToScoreString(calculateSIGTestabilityScore());
+	list[int] testabilityAspects = [unitComplexityRank,unitSizeRank];
+	str testability = numericalScoreToScoreString(calculateAverage(testabilityAspects));
 	println("Testability score: <testability>");
 	
-	str totalMaintainability = numericalScoreToScoreString(calculateTotalMaintainabilityScore());
+	list[int] maintainabilityAspects = [volumeRank,duplicationRank,unitSizeRank,unitComplexityRank];
+	str totalMaintainability = numericalScoreToScoreString(calculateAverage(maintainabilityAspects));
 	println("Total maintainability score: <totalMaintainability>");
 }
 
-/*====================================================================================
- * Functions that return SIG score for analyzability aspects.
- * We calculate averages as specified in the paper we were pointed at,
- * despite this is actually not a usefull metric for the ordinal data we are using.
- *====================================================================================
+/*
+ * Write the risk category for the size and complexity of each method to the results file.
  */
- 
-public real calculateSIGAnalyzabilityScore() {
-	return (calculateVolumeRank() + calculateCodeDuplicationRank() + calculateUnitSizeRank()) / 3.0;
+public void printResultsPerMethod() {
+	map [str, map[str, int]] unitComplexityRiskCategoryPerMethod = complexityPerMethod();
+	for (cl <- unitSizeRiskCategoryPerMethod) {
+		writeToFile("<cl>:");
+		for (m <- unitSizeRiskCategoryPerMethod[cl]) {
+			writeToFile("\t<m> size:<unitSizeRiskCategoryPerMethod[cl][m]>, complexity:<unitComplexityRiskCategoryPerMethod[cl][m]>");
+		}
+		writeToFile();
+	}
 }
 
-public real calculateSIGChangabilityScore() {
-	return (calculateUnitComplexityRank() + calculateCodeDuplicationRank()) / 2.0;
-}
-
-public real calculateSIGTestabilityScore() {
-	return (calculateUnitComplexityRank() + calculateUnitSizeRank()) / 2.0;
-}
-
-public real calculateTotalMaintainabilityScore() {
-	return (calculateVolumeRank() + calculateUnitComplexityRank() + calculateCodeDuplicationRank() + calculateUnitSizeRank()) / 4.00;
-}
+/*
+ * Calculate the average of a list of integers and round the result to an integer.
+ */
+public real calculateAverage(list[int] values) = (sum(values) * 1.0)/size(values);
 
 /*====================================================================================
  * Helper functions for SIG score calculation
@@ -185,7 +224,6 @@ private map[int, real] generalCategoryPercentageCalculator(map [str, map[str, in
  */
  public int calculateUnitSizeRank() {
  	map [str, map[str, int]] numberOfLinesPerMethod = numberOfLinesPerMethod();
- 	map [str, map[str, int]] unitSizeRiskCategoryPerMethod = ();
  	
 	for (cl <- numberOfLinesPerMethod) {
 		for (meth <- numberOfLinesPerMethod[cl]) {
