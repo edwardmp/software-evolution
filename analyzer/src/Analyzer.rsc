@@ -4,6 +4,7 @@ import Exception;
 import List;
 import Map;
 import IO;
+import Set;
 import util::Math;
 import util::Benchmark;
 
@@ -11,9 +12,14 @@ import CodeDuplicationAnalyzer;
 import ASTTraverser;
  
 /*
- * A map containing a map with all methods and the the lines in those methods.
+ * A map containing a map with all methods and the the lines in those methods for each class.
  */
 private map[str, map[str, list[value]]] linesPerMethod = ();
+
+/*
+ * A map containing a map with all methods and the risk category for the size of that method for each class.
+ */
+private map [str, map[str, int]] unitSizeRiskCategoryPerMethod = ();
 
 /*
  * Indicates whether analysis has been run and lines per method can be obtained.
@@ -24,19 +30,22 @@ private int totalVolume = 0;
 
 private loc fileLocation;
 
+/*
+ * Set the location to analyze
+ */
 public void setLocation(loc location) {
 	fileLocation = location;
 }
 
-public void createOrAppendToFile(str content) {
-	createOrAppendToFile(content, false);
+public void writeToFile(str content) {
+	writeToFile(content, false);
 }
 
-public void createOrAppendToFile() {
-	createOrAppendToFile("", false);
+public void writeToFile() {
+	writeToFile("", false);
 }
 
-public void createOrAppendToFile(str content, bool isInitialWrite) {
+public void writeToFile(str content, bool isInitialWrite) {
 	loc locationWithFileComponent = fileLocation + "resultOfAnalysis.txt";
 	str contentWithNewLine = content + "\n";
 	
@@ -54,62 +63,110 @@ public void createOrAppendToFile(str content, bool isInitialWrite) {
 	}
 }
 
+/*
+ * Analyze the contents of a location and create output containing the results.
+ */
 public void main(loc location) {
-	int cpuTimeBegin = cpuTime();
+	int cpuTimeBegin = cpuTime();	
+	analyze(location);
+	
+	int volumeRank = calculateVolumeRank();
+	int duplicationRank = calculateCodeDuplicationRank();
+	int unitSizeRank = calculateUnitSizeRank();
+	int unitComplexityRank = calculateUnitComplexityRank();
+	
+	writeToFile("--------------------------------------------------------------------------------------------", true);
+	writeToFile("AGGREGATE ANALYIS OF JAVA CODE OF CODE IN <location.file>");
+	writeToFile("--------------------------------------------------------------------------------------------");
+	writeToFile();
+	
+	printMaintainabilityAspects(volumeRank, duplicationRank, unitSizeRank, unitComplexityRank);
+	
+	writeToFile("Volume rank: <numericalScoreToScoreString(volumeRank)>");
+	writeToFile("Duplication rank: <numericalScoreToScoreString(duplicationRank)>");
+	writeToFile("Unit size rank: <numericalScoreToScoreString(unitSizeRank)>");
+	writeToFile("Unit complexity rank: <numericalScoreToScoreString(unitComplexityRank)>");
+	writeToFile();
+	
+	writeToFile("--------------------------------------------------------------------------------------------");
+	writeToFile("RESULTS PER METHOD:");
+	writeToFile("--------------------------------------------------------------------------------------------");
+	writeResultsPerMethod();
+	println("Details results were written to file <location + "resultOfAnalysis.txt">.");
+	
+	writeToFile("Time needed to run analysis in seconds: <(cpuTime() - cpuTimeBegin)/1000000000>");
+}
 
+/*
+ * Analyze the contents of a location.
+ */
+public void analyze(loc location) {	
 	Analyzer::setLocation(location);
-	
-	createOrAppendToFile("--------------------------------------------------------------------------------------------", true);
-	createOrAppendToFile("RESULT OF ANALYIS OF JAVA CODE AT LOCATION:");
-	createOrAppendToFile(location.path);
-	createOrAppendToFile("--------------------------------------------------------------------------------------------");
-	
 	CodeDuplicationAnalyzer::setLocation(location);
 	ASTTraverser::setLocation(location);
 	linesOfFilesAtFileLocation();
 	linesPerMethod = ASTTraverser::getLinesPerMethod();
 	ASTTraverser::setLinesPerMethod(linesPerMethod);
-	
-	str analyzability = numericalScoreToScoreString(calculateSIGAnalyzabilityScore());
+}
+
+/*
+ * Write the scores for the different aspects of maintainability to the results file.
+ */
+public void printMaintainabilityAspects(int volumeRank, int duplicationRank, int unitSizeRank, int unitComplexityRank) {
+	list[int] analyzabilityAspects = [volumeRank,duplicationRank,unitSizeRank];
+	str analyzability = numericalScoreToScoreString(calculateAverage(analyzabilityAspects));
 	println("Analyzability score: <analyzability>");
 	
-	str changability = numericalScoreToScoreString(calculateSIGChangabilityScore());
+	list[int] changabilityAspects = [unitComplexityRank,duplicationRank];
+	str changability = numericalScoreToScoreString(calculateAverage(changabilityAspects));
 	println("Changability score: <changability>");
 	
-	str testability = numericalScoreToScoreString(calculateSIGTestabilityScore());
+	list[int] testabilityAspects = [unitComplexityRank,unitSizeRank];
+	str testability = numericalScoreToScoreString(calculateAverage(testabilityAspects));
 	println("Testability score: <testability>");
 	
-	str totalMaintainability = numericalScoreToScoreString(calculateTotalMaintainabilityScore());
+	list[int] maintainabilityAspects = [volumeRank,duplicationRank,unitSizeRank,unitComplexityRank];
+	str totalMaintainability = numericalScoreToScoreString(calculateAverage(maintainabilityAspects));
 	println("Total maintainability score: <totalMaintainability>");
-	
-	createOrAppendToFile("\n\nTime needed to run analysis in seconds: <(cpuTime() - cpuTimeBegin)/1000000000>");
 }
 
-/*====================================================================================
- * Functions that return SIG score for analyzability aspects
- *====================================================================================
+/*
+ * Write the risk category for the size and complexity of each method to the results file.
  */
- 
-public real calculateSIGAnalyzabilityScore() {
-	return (calculateVolumeRank() + calculateCodeDuplicationRank() + calculateUnitSizeRank()) / 3.0;
+public void writeResultsPerMethod() {
+	map [str, map[str, int]] unitComplexityRiskCategoryPerMethod = complexityPerMethod();
+	
+	list[str] classNamesOrderedAlphabetically = sort(domain(unitSizeRiskCategoryPerMethod));
+	
+	for (cl <- classNamesOrderedAlphabetically) {
+		writeToFile(cl);
+		list[str] methodNamesOrderedAlphabetically = sort(domain(unitSizeRiskCategoryPerMethod[cl]));
+		for (m <- methodNamesOrderedAlphabetically) {
+			writeToFile("\t<m>");
+			writeToFile("\t\tsize: <unitSizeRiskCategoryPerMethod[cl][m]>");
+			writeToFile("\t\tcomplexity: <unitComplexityRiskCategoryPerMethod[cl][m]>");
+		}
+		writeToFile();
+	}
 }
 
-public real calculateSIGChangabilityScore() {
-	return (calculateUnitComplexityRank() + calculateCodeDuplicationRank()) / 2.0;
-}
-
-public real calculateSIGTestabilityScore() {
-	return (calculateUnitComplexityRank() + calculateUnitSizeRank()) / 2.0;
-}
-
-public real calculateTotalMaintainabilityScore() {
-	return (calculateVolumeRank() + calculateUnitComplexityRank() + calculateCodeDuplicationRank() + calculateUnitSizeRank()) / 4.00;
-}
+/*
+ * Calculate the average of a list of integers and round the result to an integer.
+ */
+public real calculateAverage(list[int] values) = (sum(values) * 1.0)/size(values);
 
 /*====================================================================================
  * Helper functions for SIG score calculation
  *====================================================================================
  */
+
+/*
+ * Converts a score of type int to the same score represented as a string.
+ */
+private str numericalScoreToScoreString(int score) {
+	// pass with real instead of int
+	return numericalScoreToScoreString(score * 1.0);
+}
 
 /*
  * Converts a score of type real to the same score represented as a string.
@@ -220,7 +277,6 @@ private map[int, real] generalCategoryPercentageCalculator(map [str, map[str, in
  */
  public int calculateUnitSizeRank() {
  	map [str, map[str, int]] numberOfLinesPerMethod = numberOfLinesPerMethod();
- 	map [str, map[str, int]] unitSizeRiskCategoryPerMethod = ();
  	
 	for (cl <- numberOfLinesPerMethod) {
 		for (meth <- numberOfLinesPerMethod[cl]) {
