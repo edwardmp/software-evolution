@@ -82,7 +82,8 @@ public list[str] stripCommentsInLines(list[str] allLines) {
 	    	}
     	}
     	// line of form [code] // [comment]
-    	else if (/\A\s*<code:(.*?)>\s*\/\/.*\z/ := line) {
+    	else if (/\A\s*<code:(.*?)>\s*\/\/.*\z/ := line
+    	&& (size(findAll(code, "\""))) % 2 == 0) {
     		if (!isEmpty(code)) {
 	    		append code;
 	    	}
