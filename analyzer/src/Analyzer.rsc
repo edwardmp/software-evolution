@@ -5,6 +5,7 @@ import List;
 import Map;
 import IO;
 import util::Math;
+import util::Benchmark;
 
 import CodeDuplicationAnalyzer;
 import ASTTraverser;
@@ -27,8 +28,42 @@ public void setLocation(loc location) {
 	fileLocation = location;
 }
 
+public void createOrAppendToFile(str content) {
+	createOrAppendToFile(content, false);
+}
+
+public void createOrAppendToFile() {
+	createOrAppendToFile("", false);
+}
+
+public void createOrAppendToFile(str content, bool isInitialWrite) {
+	loc locationWithFileComponent = fileLocation + "resultOfAnalysis.txt";
+	str contentWithNewLine = content + "\n";
+	
+	if(isInitialWrite) {
+		if (!isFile(locationWithFileComponent)) {
+			writeFile(locationWithFileComponent, contentWithNewLine);
+		}
+		else {
+			// clear contents if file already exists
+			writeFile(locationWithFileComponent, contentWithNewLine);
+		}
+	}
+	else {
+	 	appendToFile(locationWithFileComponent, contentWithNewLine); 
+	}
+}
+
 public void main(loc location) {
+	int cpuTimeBegin = cpuTime();
+
 	Analyzer::setLocation(location);
+	
+	createOrAppendToFile("--------------------------------------------------------------------------------------------", true);
+	createOrAppendToFile("RESULT OF ANALYIS OF JAVA CODE AT LOCATION:");
+	createOrAppendToFile(location.path);
+	createOrAppendToFile("--------------------------------------------------------------------------------------------");
+	
 	CodeDuplicationAnalyzer::setLocation(location);
 	ASTTraverser::setLocation(location);
 	linesOfFilesAtFileLocation();
@@ -46,6 +81,8 @@ public void main(loc location) {
 	
 	str totalMaintainability = numericalScoreToScoreString(calculateTotalMaintainabilityScore());
 	println("Total maintainability score: <totalMaintainability>");
+	
+	createOrAppendToFile("\n\nTime needed to run analysis in seconds: <(cpuTime() - cpuTimeBegin)/1000000000>");
 }
 
 /*====================================================================================

@@ -36,7 +36,7 @@ public real getDuplicationPercentageForLocation() {
 	int blocksFound = 0;
 	for (int i <- [0..(size(linesWithoutCommentsInAllFiles) - 5)]) {
 		list[str] blockOfSixLines = linesWithoutCommentsInAllFiles[i..(i + 6)];
-		// use string as key because no hashing function present in rascal, maps hash keys so using concat of string as key works also
+		// use string as key because no hashing function present in rascal, maps do actually hash keys so using concat of string as key works also
 		str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
 		if (sixLinesAsKey in blocksOfSixConsecutiveLines && !blocksOfSixConsecutiveLines[sixLinesAsKey]) {
 			numberOfDuplicates += 1;
