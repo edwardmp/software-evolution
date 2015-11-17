@@ -30,11 +30,6 @@ BasicTestCase
 		size: 0
 		complexity: 1
 
-EmptyTestCase
-	hoi
-		size: 0
-		complexity: 2
-
 NestedConditionalsTestCase
 	hoi
 		size: 1

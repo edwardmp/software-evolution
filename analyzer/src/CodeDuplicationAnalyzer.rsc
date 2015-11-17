@@ -38,7 +38,7 @@ public real getDuplicationVolume() {
 public real getDuplicationPercentageForLocation() {
 	list[str] linesWithoutCommentsInAllFiles = getSourceLinesInAllJavaFiles();
 	map[str, bool] blocksOfSixConsecutiveLines = ();
-	int numberOfDuplicates = 0;
+	int numberOfDuplicateBlocksFound = 0;
 	int blocksFound = 0;
 	
 	if (size(linesWithoutCommentsInAllFiles) - 5 > 0)
@@ -48,7 +48,7 @@ public real getDuplicationPercentageForLocation() {
 			// use string as key because no hashing function present in rascal, maps do actually hash keys so using concat of string as key works also
 			str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
 			if (sixLinesAsKey in blocksOfSixConsecutiveLines && !blocksOfSixConsecutiveLines[sixLinesAsKey]) {
-				numberOfDuplicates += 1;
+				numberOfDuplicateBlocksFound += 1;
 				blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
 			}
 			else {
@@ -57,7 +57,7 @@ public real getDuplicationPercentageForLocation() {
 			}
 			blocksFound += 1;
 		}
-		return ((numberOfDuplicates * 1.0) / blocksFound) * 100;
+		return ((numberOfDuplicateBlocksFound * 1.0) / blocksFound) * 100;
 	}
 	
 	return 0.0;
