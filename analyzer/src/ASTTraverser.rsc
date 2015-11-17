@@ -237,7 +237,7 @@ public list[value] statementToLines(Statement statement) {
 			
 			handleExpression(condition);
 		
-			list[value] thenBranchLines = statementToLines(thenBranch);
+			list[value] thenBranchLines = whenStatementNotBlockAddCondition(thenBranch, condition);
 			
 			value thenBranchLastLine = "";
 			if (!isEmpty(thenBranchLines)) {
@@ -245,7 +245,7 @@ public list[value] statementToLines(Statement statement) {
 				thenBranchLines = delete(thenBranchLines, (size(thenBranchLines) - 1));
 			}
 			
-			list[value] elseBranchLines =  statementToLines(elseBranch);
+			list[value] elseBranchLines = whenStatementNotBlockAddCondition(elseBranch, condition);
 			
 			value elseBranchFirstLine = "";
 			if (!isEmpty(elseBranchLines)) {
@@ -253,18 +253,18 @@ public list[value] statementToLines(Statement statement) {
 				elseBranchLines = delete(elseBranchLines, 0);
 			}
 			
-			if (thenBranchLastLine != "" && elseBranchFirstLine != "")
-				return whenStatementNotBlockAddCondition(thenBranchLines, condition) + <thenBranchLastLine, elseBranchFirstLine>
-					+ whenStatementNotBlockAddCondition(elseBranchLines, condition);
+			if (thenBranchLastLine != "" && elseBranchFirstLine != "") {
+				if (\block(_) := thenBranch)
+					return thenBranchLines + <thenBranchLastLine, elseBranchFirstLine> + elseBranchLines;
+				else
+					return thenBranchLines + thenBranchLastLine + elseBranchFirstLine + elseBranchLines;
+			}
 			else if (thenBranchLastLine != "")
-				return whenStatementNotBlockAddCondition(thenBranchLines, condition) + thenBranchLastLine
-					+ whenStatementNotBlockAddCondition(elseBranchLines, condition);
+				return thenBranchLines + thenBranchLastLine + elseBranchLines;
 			else if (elseBranchFirstLine != "")
-				return whenStatementNotBlockAddCondition(thenBranchLines, condition) + elseBranchFirstLine
-					+ elseBranchLines(whenStatementNotBlockAddCondition, condition);
+				return thenBranchLines + elseBranchFirstLine + elseBranchLines;
 			else
-				return whenStatementNotBlockAddCondition(thenBranchLines, condition)
-					+ whenStatementNotBlockAddCondition(elseBranchLines, condition);
+				return thenBranchLines + elseBranchLines;
 		}
 		case \switch(Expression expression, list[Statement] statements): {
 			if (activeMethod != "")
@@ -300,7 +300,7 @@ public list[value] statementToLines(Statement statement) {
 				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
-    		return whenStatementNotBlockAddCondition(statementToLines(body), condition);
+    		return whenStatementNotBlockAddCondition(body, condition);
     	}
     	default:
     		return [];
