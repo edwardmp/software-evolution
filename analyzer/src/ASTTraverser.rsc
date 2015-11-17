@@ -323,10 +323,16 @@ public list[value] statementToLines(Statement statement) {
 	}
 }
 
+/*
+ * Checks whether a statement is a block.
+ */
 public bool statementIsBlock(Statement statement) {
 	return block(_) := statement;
 }
 
+/*
+ * Returns all lines in a given statement, plus an extra line in case the given statement is a block.
+ */
 public list[value] whenStatementNotBlockAddCondition(Statement statement) {
 	if (statementIsBlock(statement)) {
 		return statementToLines(statement);
@@ -336,6 +342,10 @@ public list[value] whenStatementNotBlockAddCondition(Statement statement) {
 	}
 }
 
+/*
+ * Returns all lines in a given statement, plus an extra line containing the condition
+ * in case the given statement is a block.
+ */
 public list[value] whenStatementNotBlockAddCondition(Statement statement, Expression condition) {
 	if (statementIsBlock(statement)) {
 		return statementToLines(statement);

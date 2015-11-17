@@ -4,19 +4,32 @@ import String;
 import List;
 import IO;
 
+/*
+ * The scope of the analysis
+ */
 private loc fileLocation;
 
+/*
+ * Duplication percentage according to the SIG paper.
+ */
 private real duplicationPercentage;
 
+/*
+ * Set the scope of the analysis to a given location.
+ */
 public void setLocation(loc location) {
 	fileLocation = location;
 }
 
+/*
+ * Get the duplication percentage according tot the SIG paper,
+ * without recalculating it.
+ */
 public real getDuplicationPercentage() {
 	return duplicationPercentage;
 }
 
-/**
+/*
  * Calculate the score for code duplication of all sourcefiles in a location.
  * -2 represents --, -1 represents -, 0 represents 0, 1 represents + and 2 represents ++.
  * This representation was implemented to be able to perform calculations with the rankings.
@@ -35,6 +48,9 @@ public real getDuplicationPercentage() {
 	return -2;
  }
 
+/*
+ * Calculate and return the percentage of duplication according to the SIG paper.
+ */
 public real getDuplicationPercentageForLocation() {
 	list[str] linesWithoutCommentsInAllFiles = getSourceLinesInAllJavaFiles();
 	map[str, bool] blocksOfSixConsecutiveLines = ();
@@ -129,6 +145,9 @@ public list[str] stripCommentsInLines(list[str] allLines) {
     }
 }
 
+/*
+ * Return a list of all Java files within the scope of the analysis.
+ */
 public list[loc] allFilesAtLocation() {
 	return allFilesAtLocation(fileLocation);
 }
