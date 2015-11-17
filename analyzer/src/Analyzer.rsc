@@ -26,8 +26,14 @@ private map [str, map[str, int]] unitSizeRiskCategoryPerMethod = ();
  */
 private bool analysisRan = false;
 
+/*
+ * Total lines of code in the analyzed source files
+ */
 private int totalVolume = 0;
 
+/*
+ * The scope of the analysis
+ */
 private loc fileLocation;
 
 /*
@@ -37,14 +43,24 @@ public void setLocation(loc location) {
 	fileLocation = location;
 }
 
+/*
+ * Append a given content to the output file.
+ */
 public void writeToFile(str content) {
 	writeToFile(content, false);
 }
 
+/*
+ * Append a blank line to the output file
+ */
 public loc writeToFile() {
 	return writeToFile("", false);
 }
 
+/*
+ * Write a given content to the output file, after creating
+ * or overwriting the file iff. isInitialWrite is true.
+ */
 public loc writeToFile(str content, bool isInitialWrite) {
 	loc locationWithFileComponent;
 	if (isFile(fileLocation))
@@ -110,7 +126,6 @@ public void analyze(loc location) {
 	ASTTraverser::setLocation(location);
 	linesOfFilesAtFileLocation();
 	linesPerMethod = ASTTraverser::getLinesPerMethod();
-	ASTTraverser::setLinesPerMethod(linesPerMethod);
 }
 
 /*
