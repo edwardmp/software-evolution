@@ -3,6 +3,7 @@ module ASTTraverser
 import lang::java::m3::AST;
 import List;
 import Set;
+import IO;
 
 /*
  * A map containing the cyclomatic complexity for each method, after locToLines has been run.
@@ -199,11 +200,12 @@ public list[value] statementToLines(Statement statement) {
 				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
-			return statementToLines(body);
+			
+			return whenStatementNotBlockAddCondition(body, condition);
 		}
 		case \foreach(Declaration parameter, Expression collection, Statement body): {
 			handleExpression(collection);
-			return statementToLines(body);
+			return whenStatementNotBlockAddCondition(body, collection);
 		}
 		case \for(list[Expression] initializers, Expression condition, list[Expression] updaters, Statement body): {
 			if (activeMethod != "")
@@ -212,20 +214,22 @@ public list[value] statementToLines(Statement statement) {
 			for (Expression expr <- initializers + condition + updaters) {
 				handleExpression(expr);
 			}
-			return statementToLines(body);
+			
+			return whenStatementNotBlockAddCondition(body, condition);
 		}
 		case \for(list[Expression] initializers, list[Expression] updaters, Statement body): {
 			for (Expression expr <- initializers + updaters) {
 				handleExpression(expr);
 			}
-			return statementToLines(body);
+			return whenStatementNotBlockAddCondition(body, initializers[0]);
 		}
 		case \if(Expression condition, Statement thenBranch): {
 			if (activeMethod != "")
 				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
-			return statementToLines(thenBranch);
+			
+			return whenStatementNotBlockAddCondition(thenBranch, condition);
 		}
 		case \if(Expression condition, Statement thenBranch, Statement elseBranch): {
 			if (activeMethod != "")
@@ -250,13 +254,17 @@ public list[value] statementToLines(Statement statement) {
 			}
 			
 			if (thenBranchLastLine != "" && elseBranchFirstLine != "")
-				return thenBranchLines + <thenBranchLastLine, elseBranchFirstLine> + elseBranchLines;
+				return whenStatementNotBlockAddCondition(thenBranchLines, condition) + <thenBranchLastLine, elseBranchFirstLine>
+					+ whenStatementNotBlockAddCondition(elseBranchLines, condition);
 			else if (thenBranchLastLine != "")
-				return thenBranchLines + thenBranchLastLine + elseBranchLines;
+				return whenStatementNotBlockAddCondition(thenBranchLines, condition) + thenBranchLastLine
+					+ whenStatementNotBlockAddCondition(elseBranchLines, condition);
 			else if (elseBranchFirstLine != "")
-				return thenBranchLines + elseBranchFirstLine + elseBranchLines;
+				return whenStatementNotBlockAddCondition(thenBranchLines, condition) + elseBranchFirstLine
+					+ elseBranchLines(whenStatementNotBlockAddCondition, condition);
 			else
-				return thenBranchLines + elseBranchLines;
+				return whenStatementNotBlockAddCondition(thenBranchLines, condition)
+					+ whenStatementNotBlockAddCondition(elseBranchLines, condition);
 		}
 		case \switch(Expression expression, list[Statement] statements): {
 			if (activeMethod != "")
@@ -292,10 +300,23 @@ public list[value] statementToLines(Statement statement) {
 				numberOfConditionsEncounteredPerMethod[activeClass][activeMethod] += countConditions(condition);
 			
 			handleExpression(condition);
-    		return statementToLines(body);
+    		return whenStatementNotBlockAddCondition(statementToLines(body), condition);
     	}
     	default:
     		return [];
+	}
+}
+
+public bool statementIsBlock(Statement statement) {
+	return block(_) := statement;
+}
+
+public list[value] whenStatementNotBlockAddCondition(Statement statement, Expression condition) {
+	if (statementIsBlock(statement)) {
+		return statementToLines(statement);
+	}
+	else {
+		return condition + statementToLines(statement);
 	}
 }
 
@@ -422,7 +443,10 @@ public int countConditions(Expression expr) {
 ts/Test|.
  */
 public set[Declaration] locToAsts() {
-	return createAstsFromDirectory(fileLocation, false);
+	if (isFile(fileLocation))
+		return { createAstFromFile(fileLocation, false) };
+	else
+		return createAstsFromDirectory(fileLocation, false);
 }
 
 /*

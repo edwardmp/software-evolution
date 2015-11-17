@@ -18,6 +18,11 @@ public void runTests(bool isEdwardLaptop) {
 	list[str] fixtureLines = readFileLines(pathPrefix + "analyzer/src/tester/resultFixture.txt");
 	list[str] outputFileLines = readFileLines(pathPrefix + "AnalyzerTestCases/resultOfAnalysis.txt");
 	
+	println(fixtureLines);
+	
+	println();
+	
+	println(outputFileLines);
 	if (fixtureLines != outputFileLines) {
 		throw AssertionFailed("Fixture output file not equal to generated output file");
 	}

@@ -41,12 +41,17 @@ public void writeToFile(str content) {
 	writeToFile(content, false);
 }
 
-public void writeToFile() {
-	writeToFile("", false);
+public loc writeToFile() {
+	return writeToFile("", false);
 }
 
-public void writeToFile(str content, bool isInitialWrite) {
-	loc locationWithFileComponent = fileLocation + "resultOfAnalysis.txt";
+public loc writeToFile(str content, bool isInitialWrite) {
+	loc locationWithFileComponent;
+	if (isFile(fileLocation))
+		locationWithFileComponent = fileLocation.parent + "resultOfAnalysis.txt";
+	else
+		locationWithFileComponent = fileLocation + "resultOfAnalysis.txt";
+	
 	str contentWithNewLine = content + "\n";
 	
 	if(isInitialWrite) {
@@ -61,13 +66,14 @@ public void writeToFile(str content, bool isInitialWrite) {
 	else {
 	 	appendToFile(locationWithFileComponent, contentWithNewLine); 
 	}
+	
+	return locationWithFileComponent;
 }
 
 /*
  * Analyze the contents of a location and create output containing the results.
  */
 public void main(loc location) {
-	int cpuTimeBegin = cpuTime();	
 	analyze(location);
 	
 	int volumeRank = calculateVolumeRank();
@@ -75,8 +81,8 @@ public void main(loc location) {
 	int unitSizeRank = calculateUnitSizeRank();
 	int unitComplexityRank = calculateUnitComplexityRank();
 	
-	writeToFile("--------------------------------------------------------------------------------------------", true);
-	writeToFile("AGGREGATE ANALYIS OF JAVA CODE OF CODE IN <location.file>");
+	loc analysisFileLoc = writeToFile("--------------------------------------------------------------------------------------------", true);
+	writeToFile("AGGREGATE ANALYIS OF JAVA CODE OF CODE IN:\n<location.path>");
 	writeToFile("--------------------------------------------------------------------------------------------");
 	writeToFile();
 	
@@ -92,9 +98,7 @@ public void main(loc location) {
 	writeToFile("RESULTS PER METHOD:");
 	writeToFile("--------------------------------------------------------------------------------------------");
 	writeResultsPerMethod();
-	println("Details results were written to file <location + "resultOfAnalysis.txt">.");
-	
-	writeToFile("Time needed to run analysis in seconds: <(cpuTime() - cpuTimeBegin)/1000000000>");
+	println("Details results were written to file <analysisFileLoc>.");
 }
 
 /*

@@ -40,22 +40,27 @@ public real getDuplicationPercentageForLocation() {
 	map[str, bool] blocksOfSixConsecutiveLines = ();
 	int numberOfDuplicates = 0;
 	int blocksFound = 0;
-	for (int i <- [0..(size(linesWithoutCommentsInAllFiles) - 5)]) {
-		list[str] blockOfSixLines = linesWithoutCommentsInAllFiles[i..(i + 6)];
-		// use string as key because no hashing function present in rascal, maps do actually hash keys so using concat of string as key works also
-		str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
-		if (sixLinesAsKey in blocksOfSixConsecutiveLines && !blocksOfSixConsecutiveLines[sixLinesAsKey]) {
-			numberOfDuplicates += 1;
-			blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
+	
+	if (size(linesWithoutCommentsInAllFiles) - 5 > 0)
+	{
+		for (int i <- [0..(size(linesWithoutCommentsInAllFiles) - 5)]) {
+			list[str] blockOfSixLines = linesWithoutCommentsInAllFiles[i..(i + 6)];
+			// use string as key because no hashing function present in rascal, maps do actually hash keys so using concat of string as key works also
+			str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
+			if (sixLinesAsKey in blocksOfSixConsecutiveLines && !blocksOfSixConsecutiveLines[sixLinesAsKey]) {
+				numberOfDuplicates += 1;
+				blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
+			}
+			else {
+				// only add when it is not present yet, adding twice adds no value
+				blocksOfSixConsecutiveLines[sixLinesAsKey] = false;
+			}
+			blocksFound += 1;
 		}
-		else {
-			// only add when it is not present yet, adding twice adds no value
-			blocksOfSixConsecutiveLines[sixLinesAsKey] = false;
-		}
-		blocksFound += 1;
+		return ((numberOfDuplicates * 1.0) / blocksFound) * 100;
 	}
 	
-	return ((numberOfDuplicates * 1.0) / blocksFound) * 100;
+	return 0.0;
 }
 
 /*

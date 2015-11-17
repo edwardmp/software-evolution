@@ -1,11 +1,12 @@
 --------------------------------------------------------------------------------------------
-AGGREGATE ANALYIS OF JAVA CODE OF CODE IN AnalyzerTestCases
+AGGREGATE ANALYIS OF JAVA CODE OF CODE IN:
+/Users/Edward/eclipse/workspace/Assignment 1/analyzerTestCases
 --------------------------------------------------------------------------------------------
 
-Volume rank: +
-Duplication rank: 0
-Unit size rank: ++
-Unit complexity rank: ++
+Volume rank: 95 => +
+Duplication rank: 8.88888888900 => 0
+Unit size rank: +
+Unit complexity rank: +
 
 --------------------------------------------------------------------------------------------
 RESULTS PER METHOD:
@@ -31,7 +32,6 @@ BasicTestCase
 
 NestedConditionalsTestCase
 	hoi
-		size: 0
+		size: 1
 		complexity: 19
 
-Time needed to run analysis in seconds: 0
