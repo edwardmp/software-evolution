@@ -6,16 +6,18 @@ import Exception;
 
 public void runTests(bool isEdwardLaptop) {
 	loc pathPrefix;
+	list[str] fixtureLines;
 	if (isEdwardLaptop) {
 		pathPrefix = |file:///Users/Edward/eclipse/workspace/Assignment%201/|;
+		fixtureLines = readFileLines(pathPrefix + "analyzer/src/tester/resultFixtureEdward.txt");
 	}
 	else {
 		pathPrefix = |file:///C:/Users/Olav/Documents/Software%20Engineering/Software%20Evolution/software-evolution|;
+		fixtureLines = readFileLines(pathPrefix + "analyzer/src/tester/resultFixtureOlav.txt");
 	}
 		
 	loc javaTestFiles = (pathPrefix + "analyzerTestCases");
 	main(javaTestFiles);
-	list[str] fixtureLines = readFileLines(pathPrefix + "analyzer/src/tester/resultFixture.txt");
 	list[str] outputFileLines = readFileLines(pathPrefix + "AnalyzerTestCases/resultOfAnalysis.txt");
 	
 	if (fixtureLines != outputFileLines) {

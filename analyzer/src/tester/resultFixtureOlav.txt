@@ -1,0 +1,37 @@
+--------------------------------------------------------------------------------------------
+AGGREGATE ANALYIS OF JAVA CODE OF CODE IN:
+/C:/Users/Olav/Documents/Software Engineering/Software Evolution/software-evolution/analyzerTestCases
+--------------------------------------------------------------------------------------------
+
+Volume rank: 95 => +
+Duplication rank: 8.88888888900 => 0
+Unit size rank: +
+Unit complexity rank: +
+
+--------------------------------------------------------------------------------------------
+RESULTS PER METHOD:
+--------------------------------------------------------------------------------------------
+AdvancedTestCase
+	AdvancedTestCase
+		size: 0
+		complexity: 1
+	getFirstName
+		size: 0
+		complexity: 1
+	infiniteLoop
+		size: 0
+		complexity: 2
+
+BasicTestCase
+	BasicTestCase
+		size: 0
+		complexity: 3
+	getMonthString
+		size: 0
+		complexity: 1
+
+NestedConditionalsTestCase
+	hoi
+		size: 1
+		complexity: 19
+
