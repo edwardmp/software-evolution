@@ -13,7 +13,7 @@ public void runTests(bool isEdwardLaptop) {
 		pathPrefix = |file:///C:/Users/Olav/Documents/Software%20Engineering/Software%20Evolution/software-evolution|;
 	}
 		
-	loc javaTestFiles = (pathPrefix + "AnalyzerTestCases");
+	loc javaTestFiles = (pathPrefix + "analyzerTestCases");
 	main(javaTestFiles);
 	list[str] fixtureLines = readFileLines(pathPrefix + "analyzer/src/tester/resultFixture.txt");
 	list[str] outputFileLines = readFileLines(pathPrefix + "AnalyzerTestCases/resultOfAnalysis.txt");

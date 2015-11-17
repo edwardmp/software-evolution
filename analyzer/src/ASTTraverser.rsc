@@ -5,7 +5,7 @@ import List;
 import Set;
 
 /*
- * A map containing the cyclomatic complexity for each method, after locToLines has been run.
+ * A map containing the cyclomatic complexity for each method.
  */
 private map[str, map[str, int]] numberOfConditionsEncounteredPerMethod = ();
 
@@ -14,20 +14,32 @@ private map[str, map[str, int]] numberOfConditionsEncounteredPerMethod = ();
  */
 private str activeMethod = "";
 
+/*
+ * A string that saves the currently investigated class for the complexity.
+ */
 private str activeClass = "";
 
+/*
+ * The scope of the analysis
+ */
 private loc fileLocation;
 
+/*
+ * A map containing the lines for each method.
+ */
 private map[str, map[str, list[value]]] linesPerMethod = ();
 
+/*
+ * Set the scope of the analysis to a given location.
+ */
 public void setLocation(loc location) {
 	fileLocation = location;
 }
 
-public void setLinesPerMethod(map[str, map[str, list[value]]] linesForEachMethod) {
-	linesPerMethod = linesForEachMethod;
-}
-
+/*
+ * Get a map from each class in the analyzed code to a map from
+ * each method in that class to the lines in that method.
+ */
 public map[str, map[str, list[value]]] getLinesPerMethod()
 {
 	return linesPerMethod;
