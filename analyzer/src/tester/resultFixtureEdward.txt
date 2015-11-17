@@ -4,7 +4,7 @@ AGGREGATE ANALYIS OF JAVA CODE OF CODE IN:
 --------------------------------------------------------------------------------------------
 
 Volume rank: 95 => +
-Duplication rank: 8.88888888900 => 0
+Duplication rank: 17.7777777800 => -
 Unit size rank: +
 Unit complexity rank: +
 

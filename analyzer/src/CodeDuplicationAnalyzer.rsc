@@ -48,7 +48,7 @@ public real getDuplicationPercentageForLocation() {
 			// use string as key because no hashing function present in rascal, maps do actually hash keys so using concat of string as key works also
 			str sixLinesAsKey = blockOfSixLines[0] + blockOfSixLines[1] + blockOfSixLines[2] + blockOfSixLines[3] + blockOfSixLines[4] + blockOfSixLines[5];
 			if (sixLinesAsKey in blocksOfSixConsecutiveLines && !blocksOfSixConsecutiveLines[sixLinesAsKey]) {
-				numberOfDuplicateBlocksFound += 1;
+				numberOfDuplicateBlocksFound += 2;
 				blocksOfSixConsecutiveLines[sixLinesAsKey] = true;
 			}
 			else {
