@@ -233,7 +233,11 @@ public list[value] statementToLines(Statement statement) {
 			for (Expression expr <- initializers + updaters) {
 				handleExpression(expr);
 			}
-			return whenStatementNotBlockAddCondition(body, initializers[0]);
+			
+			if (isEmpty(initializers))
+				return whenStatementNotBlockAddCondition(body);
+			else
+				return whenStatementNotBlockAddCondition(body, initializers[0]);
 		}
 		case \if(Expression condition, Statement thenBranch): {
 			if (activeMethod != "")
@@ -321,6 +325,15 @@ public list[value] statementToLines(Statement statement) {
 
 public bool statementIsBlock(Statement statement) {
 	return block(_) := statement;
+}
+
+public list[value] whenStatementNotBlockAddCondition(Statement statement) {
+	if (statementIsBlock(statement)) {
+		return statementToLines(statement);
+	}
+	else {
+		return "if/block/do/while" + statementToLines(statement);
+	}
 }
 
 public list[value] whenStatementNotBlockAddCondition(Statement statement, Expression condition) {

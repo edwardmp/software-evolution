@@ -6,14 +6,14 @@ import IO;
 
 private loc fileLocation;
 
-private real duplicationVolume;
+private real duplicationPercentage;
 
 public void setLocation(loc location) {
 	fileLocation = location;
 }
 
-public real getDuplicationVolume() {
-	return duplicationVolume;
+public real getDuplicationPercentage() {
+	return duplicationPercentage;
 }
 
 /**
@@ -22,15 +22,15 @@ public real getDuplicationVolume() {
  * This representation was implemented to be able to perform calculations with the rankings.
  */
  public int calculateCodeDuplicationRank() {
- 	duplicationVolume = getDuplicationPercentageForLocation();
+ 	duplicationPercentage = getDuplicationPercentageForLocation();
 
- 	if (duplicationVolume < 3)
+ 	if (duplicationPercentage < 3)
  		return 2;
-	if (duplicationVolume < 5)
+	if (duplicationPercentage < 5)
 		return 1;
-	if (duplicationVolume < 10)
+	if (duplicationPercentage < 10)
 		return 0;
-	if (duplicationVolume < 20)
+	if (duplicationPercentage < 20)
 		return -1;
 	return -2;
  }
