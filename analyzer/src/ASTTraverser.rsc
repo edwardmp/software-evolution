@@ -168,7 +168,7 @@ public list[value] statementToLines(Statement statement) {
 		case l:\label(str name, Statement body):
 			return [l];
 		case r:\return(Expression expression): {
-		handleExpression(expression);
+			handleExpression(expression);
 			return [r];
 		}
 		case r:\return():
